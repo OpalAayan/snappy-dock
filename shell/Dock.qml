@@ -62,8 +62,8 @@ Scope {
             readonly property bool wantsFullCrossAxis: Boolean(DaemonBridge.config.full_width) || alignStart || alignEnd
 
             /* ── Dock content dimensions ─────────────────────────────── */
-            readonly property real dockContentWidth:  dockLayout.implicitWidth  + Theme.dockPadding * 2
-            readonly property real dockContentHeight: dockLayout.implicitHeight + Theme.dockPadding * 2
+            readonly property real dockContentWidth:  mainLayout.implicitWidth  + Theme.dockPadding * 2
+            readonly property real dockContentHeight: mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth:  isHorizontal
                                                 ? (wantsFullCrossAxis ? modelData.width : dockContentWidth)
                                                 : dockContentWidth
@@ -339,20 +339,10 @@ Scope {
                     }
 
                     Grid {
-                        id: dockLayout
+                        id: mainLayout
                         anchors.centerIn: parent
-                        columns: screenScope.isVertical ? 1 : Math.max(1, screenScope.visibleItemCount)
+                        columns: screenScope.isVertical ? 1 : 5
                         spacing: Theme.itemSpacing
-
-                        add: Transition {
-                            ParallelAnimation {
-                                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 250; easing.type: Easing.OutCubic }
-                                NumberAnimation { property: "scale"; from: 0.5; to: 1.0; duration: 250; easing.type: Easing.OutBack }
-                            }
-                        }
-                        move: Transition {
-                            NumberAnimation { properties: "x,y"; duration: 250; easing.type: Easing.OutCubic }
-                        }
 
                         Loader {
                             active: screenScope.showLauncher && !screenScope.launcherAtEnd
@@ -368,22 +358,38 @@ Scope {
                             sourceComponent: separatorComponent
                         }
 
-                        Repeater {
-                            model: DaemonBridge.dockItems.length
+                        Grid {
+                            id: dockLayout
+                            columns: screenScope.isVertical ? 1 : Math.max(1, DaemonBridge.dockItems.length)
+                            spacing: Theme.itemSpacing
 
-                            DockItem {
-                                required property int index
-                                readonly property var modelData: DaemonBridge.dockItems[index] || ({})
+                            add: Transition {
+                                ParallelAnimation {
+                                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 250; easing.type: Easing.OutCubic }
+                                    NumberAnimation { property: "scale"; from: 0.5; to: 1.0; duration: 250; easing.type: Easing.OutBack }
+                                }
+                            }
+                            move: Transition {
+                                NumberAnimation { properties: "x,y"; duration: 250; easing.type: Easing.OutCubic }
+                            }
 
-                                className:     modelData.className     || ""
-                                icon:          modelData.icon          || ""
-                                addr:          modelData.addr          || ""
-                                title:         modelData.title         || ""
-                                instanceCount: modelData.instanceCount || 0
-                                isActive:      modelData.isActive      || false
-                                isPinned:      modelData.isPinned      || false
-                                instances:     modelData.instances     || []
-                                size:          Theme.iconSize
+                            Repeater {
+                                model: DaemonBridge.dockItems.length
+
+                                DockItem {
+                                    required property int index
+                                    readonly property var modelData: DaemonBridge.dockItems[index] || ({})
+
+                                    className:     modelData.className     || ""
+                                    icon:          modelData.icon          || ""
+                                    addr:          modelData.addr          || ""
+                                    title:         modelData.title         || ""
+                                    instanceCount: modelData.instanceCount || 0
+                                    isActive:      modelData.isActive      || false
+                                    isPinned:      modelData.isPinned      || false
+                                    instances:     modelData.instances     || []
+                                    size:          Theme.iconSize
+                                }
                             }
                         }
 
