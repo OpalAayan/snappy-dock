@@ -251,10 +251,14 @@ Scope {
                     id: launcherButtonComponent
 
                     Rectangle {
+                        id: launcherBg
                         width:  screenScope.itemExtent
                         height: screenScope.itemExtent
                         color:  launcherMouse.containsMouse ? Theme.itemHover : "transparent"
-                        radius: 12
+                        radius: Math.min(width / 2, Math.max(4, Math.round(Theme.iconSize * 0.25)))
+
+                        readonly property real dotSize: Math.max(2, Math.round(Theme.iconSize / 8))
+                        readonly property real dotSpacing: Math.max(1, Math.round(Theme.iconSize / 12))
 
                         Behavior on color { ColorAnimation { duration: 120 } }
                         scale: launcherMouse.containsMouse ? 1.08 : 1.0
@@ -263,12 +267,12 @@ Scope {
                         Grid {
                             anchors.centerIn: parent
                             columns: 3
-                            spacing: 4
+                            spacing: launcherBg.dotSpacing
 
                             Repeater {
                                 model: 9
                                 Rectangle {
-                                    width: 6; height: 6; radius: 3
+                                    width: launcherBg.dotSize; height: launcherBg.dotSize; radius: launcherBg.dotSize / 2
                                     color: launcherMouse.containsMouse
                                            ? Theme.accentColor : Theme.textColor
                                     Behavior on color { ColorAnimation { duration: 120 } }

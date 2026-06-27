@@ -43,6 +43,24 @@ Item {
     implicitWidth:  size + Theme.itemPadding * 2
     implicitHeight: size + Theme.itemPadding * 2 + dotRow.height + 4
 
+    property bool showTooltip: false
+
+    Timer {
+        id: hoverTimer
+        interval: 300
+        running: mouseArea.containsMouse && !itemRoot.menuVisible
+        onTriggered: itemRoot.showTooltip = true
+    }
+
+    Connections {
+        target: mouseArea
+        function onContainsMouseChanged() {
+            if (!mouseArea.containsMouse) {
+                itemRoot.showTooltip = false;
+            }
+        }
+    }
+
     /* ── Icon container ──────────────────────────────────────────── */
     Rectangle {
         id: iconBg
@@ -101,17 +119,43 @@ Item {
                 }
             }
         }
+    }
 
-        /* ── Tooltip ─────────────────────────────────────────────── */
+    /* ── Dot indicators ──────────────────────────────────────────── */
+    DotIndicator {
+        id: dotRow
+        anchors.top: iconBg.bottom
+        anchors.topMargin: 3
+        anchors.horizontalCenter: parent.horizontalCenter
+        count: itemRoot.instanceCount
+        active: itemRoot.isActive
+    }
+
+    /* ── Tooltip via PopupWindow ───────────────────────────── */
+    PopupWindow {
+        id: tooltipPopup
+        visible: itemRoot.showTooltip && !itemRoot.menuVisible
+        anchor.item: itemRoot
+        anchor.edges: {
+            var pos = DaemonBridge.config.position || "bottom";
+            if (pos === "top") return Edges.Bottom;
+            if (pos === "left") return Edges.Right;
+            if (pos === "right") return Edges.Left;
+            return Edges.Top;
+        }
+        anchor.gravity: anchor.edges
+        
+        anchor.margins.top:    DaemonBridge.config.position === "top" ? 8 : 0
+        anchor.margins.bottom: DaemonBridge.config.position === "bottom" || !DaemonBridge.config.position ? 8 : 0
+        anchor.margins.left:   DaemonBridge.config.position === "left" ? 8 : 0
+        anchor.margins.right:  DaemonBridge.config.position === "right" ? 8 : 0
+        
+        implicitWidth: tooltipRect.width
+        implicitHeight: tooltipRect.height
+        color: "transparent"
+
         Rectangle {
-            id: tooltip
-            visible: mouseArea.containsMouse && !itemRoot.menuVisible
-
-            /* Position above the icon */
-            x: (parent.width - width) / 2
-            y: -height - 10
-            z: 100
-
+            id: tooltipRect
             width: tipText.implicitWidth + 16
             height: tipText.implicitHeight + 10
             radius: 8
@@ -126,22 +170,7 @@ Item {
                 color: Theme.textColor
                 font.pixelSize: 12
             }
-
-            opacity: visible ? 1.0 : 0.0
-            Behavior on opacity {
-                NumberAnimation { duration: 100 }
-            }
         }
-    }
-
-    /* ── Dot indicators ──────────────────────────────────────────── */
-    DotIndicator {
-        id: dotRow
-        anchors.top: iconBg.bottom
-        anchors.topMargin: 3
-        anchors.horizontalCenter: parent.horizontalCenter
-        count: itemRoot.instanceCount
-        active: itemRoot.isActive
     }
 
     /* ── Context Menu via PopupWindow ───────────────────────────── */
@@ -174,6 +203,7 @@ Item {
         /* ── Global click-away handler to close menu ──────────────── */
         onVisibleChanged: {
             if (visible) {
+                itemRoot.showTooltip = false;
                 contextMenu.currentPage = 0;
                 contextMenu.forceActiveFocus();
             } else if (DaemonBridge.activeMenuId === itemRoot.itemId) {
