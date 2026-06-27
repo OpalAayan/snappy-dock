@@ -1,0 +1,23 @@
+# Build artifacts
+daemon/build/
+*.o
+*.so
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reference material (not part of the project)
+quickshell-docs/
+quickshell-examples/
+quickshell-web/
+hyprland-notes/
+snappy-dock-gtk*/
+moreqsstuff

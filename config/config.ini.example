@@ -1,0 +1,89 @@
+# Snappy Dock example config
+#
+# Copy this file to:
+#
+#   ~/.config/snappy-dock/config.ini
+#
+# Then edit that copy. Keep this file as the reference example.
+#
+# Format:
+#   Key=Value
+#   Lines starting with # or ; are comments.
+#   Boolean values accept true/false, yes/no, or 1/0.
+#
+# After editing, restart the dock:
+#
+#   snappy-dock --restart
+#
+# The dock reads this file through snappydock-d and applies it in QML.
+
+[Dock]
+
+# Where the dock should live.
+# Values: bottom, top, left, right.
+Position=bottom
+
+# Dock alignment on the screen edge.
+# Values: center, start, end.
+# For top/bottom docks, start means left and end means right.
+# For left/right docks, start means top and end means bottom.
+Alignment=center
+
+# Layer-shell layer.
+# Higher layers appear above more windows.
+# Values: background, bottom, top, overlay.
+Layer=overlay
+
+# Stretch the dock window across the whole screen width.
+# For left/right docks, this stretches across the full screen height.
+FullWidth=false
+
+# Reserve screen space for the dock.
+# 0 or off: do not reserve space.
+# auto: let the compositor decide.
+# Any number: reserve that many pixels.
+ExclusiveZone=0
+
+# Hide the dock when it is not hovered.
+AutoHide=false
+
+# Command run by the launcher button.
+# Examples:
+#   fuzzel
+#   rofi -show drun
+#   wofi --show drun
+LauncherCmd=fuzzel
+
+# Where to place the launcher button.
+# Values: start, end, none.
+LauncherPos=start
+
+# Number of workspaces shown in the right-click "Move to workspace" menu.
+# Set this to match how many workspaces you normally use.
+WorkspaceCount=5
+
+# Velocity filter for the auto-hide edge hotspot, in milliseconds.
+# Lower means the pointer must hit the screen edge faster.
+# 0 means any edge hover reveals the dock.
+HotspotDelay=50
+
+[Icons]
+
+# Icon size in pixels.
+# Good values: 32, 40, 48, 56, 64.
+IconSize=48
+
+# Qt icon theme name. Use default or leave empty for the system theme.
+# Example: Tela-dracula
+Theme=default
+
+# Icon name used when an app icon cannot be found in the theme.
+Fallback=application-x-executable
+
+[Margins]
+
+# Extra space between the dock and each screen edge, in pixels.
+Top=0
+Bottom=5
+Left=0
+Right=0
