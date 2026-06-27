@@ -40,8 +40,22 @@ Item {
         return Quickshell.iconPath(name, Theme.iconFallback);
     }
 
-    implicitWidth:  size + Theme.itemPadding * 2
-    implicitHeight: size + Theme.itemPadding * 2 + dotRow.height + 4
+    property string dockPosition: {
+        var pos = String(DaemonBridge.config.position || "bottom").toLowerCase();
+        if (pos === "top" || pos === "bottom" || pos === "left" || pos === "right")
+            return pos;
+        return "bottom";
+    }
+    property bool isLeft: dockPosition === "left"
+    property bool isRight: dockPosition === "right"
+    property bool isTop: dockPosition === "top"
+    property bool isVertical: isLeft || isRight
+    readonly property int indicatorGap: 4
+    readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
+
+    // Fixed implicit sizes keep the dock from shifting as dot count changes.
+    implicitWidth:  size + Theme.itemPadding * 2 + (isVertical ? sideIndicatorWidth + indicatorGap : 0)
+    implicitHeight: size + Theme.itemPadding * 2 + (isVertical ? 0 : Theme.dotSize + indicatorGap)
 
     property bool showTooltip: false
 
@@ -64,8 +78,15 @@ Item {
     /* ── Icon container ──────────────────────────────────────────── */
     Rectangle {
         id: iconBg
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
+
+        anchors.top: (!isVertical && !isTop) ? parent.top : undefined
+        anchors.bottom: (!isVertical && isTop) ? parent.bottom : undefined
+        anchors.horizontalCenter: isVertical ? undefined : parent.horizontalCenter
+
+        anchors.verticalCenter: isVertical ? parent.verticalCenter : undefined
+        anchors.right: (isVertical && isLeft) ? parent.right : undefined
+        anchors.left: (isVertical && isRight) ? parent.left : undefined
+
         width:  itemRoot.size + Theme.itemPadding * 2
         height: itemRoot.size + Theme.itemPadding * 2
         radius: 12
@@ -124,9 +145,21 @@ Item {
     /* ── Dot indicators ──────────────────────────────────────────── */
     DotIndicator {
         id: dotRow
-        anchors.top: iconBg.bottom
-        anchors.topMargin: 3
-        anchors.horizontalCenter: parent.horizontalCenter
+        position: itemRoot.dockPosition
+        isVertical: itemRoot.isVertical
+
+        anchors.top: (!itemRoot.isVertical && !itemRoot.isTop) ? iconBg.bottom : undefined
+        anchors.topMargin: (!itemRoot.isVertical && !itemRoot.isTop) ? 3 : 0
+        anchors.bottom: (!itemRoot.isVertical && itemRoot.isTop) ? iconBg.top : undefined
+        anchors.bottomMargin: (!itemRoot.isVertical && itemRoot.isTop) ? 3 : 0
+        anchors.horizontalCenter: itemRoot.isVertical ? undefined : parent.horizontalCenter
+
+        anchors.verticalCenter: itemRoot.isVertical ? iconBg.verticalCenter : undefined
+        anchors.right: (itemRoot.isVertical && itemRoot.isLeft) ? iconBg.left : undefined
+        anchors.rightMargin: (itemRoot.isVertical && itemRoot.isLeft) ? itemRoot.indicatorGap : 0
+        anchors.left: (itemRoot.isVertical && itemRoot.isRight) ? iconBg.right : undefined
+        anchors.leftMargin: (itemRoot.isVertical && itemRoot.isRight) ? itemRoot.indicatorGap : 0
+
         count: itemRoot.instanceCount
         active: itemRoot.isActive
     }
@@ -179,9 +212,19 @@ Item {
         visible: itemRoot.menuVisible
         grabFocus: true
         anchor.item: itemRoot
-        anchor.edges: Edges.Top
-        anchor.gravity: Edges.Top
-        anchor.margins.bottom: 8
+        anchor.edges: {
+            var pos = DaemonBridge.config.position || "bottom";
+            if (pos === "top") return Edges.Bottom;
+            if (pos === "left") return Edges.Right;
+            if (pos === "right") return Edges.Left;
+            return Edges.Top;
+        }
+        anchor.gravity: anchor.edges
+        
+        anchor.margins.top:    DaemonBridge.config.position === "top" ? 8 : 0
+        anchor.margins.bottom: DaemonBridge.config.position === "bottom" || !DaemonBridge.config.position ? 8 : 0
+        anchor.margins.left:   DaemonBridge.config.position === "left" ? 8 : 0
+        anchor.margins.right:  DaemonBridge.config.position === "right" ? 8 : 0
         
         implicitWidth: contextMenu.implicitWidth
         implicitHeight: contextMenu.implicitHeight
