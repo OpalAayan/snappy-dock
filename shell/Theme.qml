@@ -32,6 +32,8 @@ Singleton {
     property int iconSize:       48
     property string iconTheme:   ""
     property string iconFallback: "application-x-executable"
+    property string fontFamily:   "Sans"
+    property int fontWeight:      Font.Bold
     readonly property int dockRadius:     16
     readonly property int dockPadding:    6
     readonly property int itemPadding:    5

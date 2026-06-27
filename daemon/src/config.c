@@ -78,6 +78,12 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->autohide       = false;
     cfg->launcher_cmd   = str_dup("fuzzel");
     cfg->launcher_pos   = str_dup("start");
+    cfg->launcher_icon  = str_dup("dots");
+    cfg->launcher_icon_size = 0;
+    cfg->launcher_hover_bg = true;
+    cfg->launcher_hover_bg_size = 0;
+    cfg->font_family = str_dup("Sans");
+    cfg->font_weight = str_dup("Bold");
     cfg->workspace_count = 5;
     cfg->hotspot_delay  = 50;
 }
@@ -116,6 +122,15 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
         } else if (str_eq_ci(key, "LauncherPos")) {
             free(cfg->launcher_pos);
             cfg->launcher_pos = str_dup(val);
+        } else if (str_eq_ci(key, "LauncherIcon")) {
+            free(cfg->launcher_icon);
+            cfg->launcher_icon = str_dup(val);
+        } else if (str_eq_ci(key, "LauncherIconSize")) {
+            cfg->launcher_icon_size = atoi(val);
+        } else if (str_eq_ci(key, "LauncherHoverBg")) {
+            cfg->launcher_hover_bg = parse_bool(val);
+        } else if (str_eq_ci(key, "LauncherHoverBgSize")) {
+            cfg->launcher_hover_bg_size = atoi(val);
         } else if (str_eq_ci(key, "WorkspaceCount")) {
             cfg->workspace_count = atoi(val);
         } else if (str_eq_ci(key, "HotspotDelay")) {
@@ -135,6 +150,14 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
         } else if (str_eq_ci(key, "Fallback") || str_eq_ci(key, "FallbackIcon")) {
             free(cfg->icon_fallback);
             cfg->icon_fallback = str_dup(normal_icon_fallback(val));
+        }
+    } else if (str_eq_ci(section, "Font")) {
+        if (str_eq_ci(key, "Family")) {
+            free(cfg->font_family);
+            cfg->font_family = str_dup(val);
+        } else if (str_eq_ci(key, "Weight")) {
+            free(cfg->font_weight);
+            cfg->font_weight = str_dup(val);
         }
     }
 }
@@ -254,5 +277,8 @@ void config_free(void)
     free(s_cfg.layer);
     free(s_cfg.launcher_cmd);
     free(s_cfg.launcher_pos);
+    free(s_cfg.launcher_icon);
+    free(s_cfg.font_family);
+    free(s_cfg.font_weight);
     memset(&s_cfg, 0, sizeof(s_cfg));
 }

@@ -58,6 +58,23 @@ LauncherCmd=fuzzel
 # Values: start, end, none.
 LauncherPos=start
 
+# Text or icon for the launcher button.
+# "dots" (default), "0", "auto", "none", or empty show the default 9-dot grid.
+# Any other string is displayed as text using the configured font.
+# Example: 󱄅 (Requires Nerd Font)
+LauncherIcon=dots
+
+# Size of the launcher icon.
+# 0 means scale automatically to roughly match IconSize.
+LauncherIconSize=0
+
+# Show a hover background for the launcher icon.
+LauncherHoverBg=true
+
+# Size of the launcher hover background.
+# 0 means scale automatically based on IconSize and padding.
+LauncherHoverBgSize=0
+
 # Number of workspaces shown in the right-click "Move to workspace" menu.
 # Set this to match how many workspaces you normally use.
 WorkspaceCount=5
@@ -87,3 +104,12 @@ Top=0
 Bottom=5
 Left=0
 Right=0
+
+[Font]
+
+# Font family for all text
+# Examples: Sans, Inter, Roboto, JetBrainsMono Nerd Font, FiraCode Nerd Font etc.
+Family=Sans
+
+# Font weight: Normal, Bold, Light, Medium, SemiBold
+Weight=Bold

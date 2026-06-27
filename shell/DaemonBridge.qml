@@ -37,6 +37,12 @@ Singleton {
         autohide: false,
         launcher_cmd: "fuzzel",
         launcher_pos: "start",
+        launcher_icon: "dots",
+        launcher_icon_size: 0,
+        launcher_hover_bg: true,
+        launcher_hover_bg_size: 0,
+        font_family: "Sans",
+        font_weight: "Bold",
         workspace_count: 5,
         margin_top: 0,
         margin_bottom: 5,
@@ -166,6 +172,8 @@ Singleton {
             Theme.iconSize = obj.icon_size || 48;
             Theme.iconTheme = obj.icon_theme || "";
             Theme.iconFallback = obj.icon_fallback || "application-x-executable";
+            Theme.fontFamily = obj.font_family || "Sans";
+            Theme.fontWeight = (obj.font_weight && obj.font_weight.toLowerCase() === "bold") ? Font.Bold : Font.Normal;
         }
         else if (obj.type === "state") {
             clients   = obj.clients  || [];

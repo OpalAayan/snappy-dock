@@ -36,6 +36,12 @@ typedef struct {
     bool  autohide;
     char *launcher_cmd;     /* e.g. "fuzzel", "rofi -show drun"          */
     char *launcher_pos;     /* "start" | "end" | "none"                  */
+    char *launcher_icon;
+    int   launcher_icon_size;
+    bool  launcher_hover_bg;
+    int   launcher_hover_bg_size;
+    char *font_family;
+    char *font_weight;
     int   workspace_count;  /* right-click "Send to WS" submenu count    */
     int   hotspot_delay;    /* auto-hide velocity filter (ms), 0=instant */
 } DockConfig;

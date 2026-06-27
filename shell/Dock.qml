@@ -54,6 +54,10 @@ Scope {
                                                     + (showLauncher ? 1 : 0)
                                                     + (showLauncher && DaemonBridge.dockItems.length > 0 ? 1 : 0)
             readonly property int itemExtent:    Theme.iconSize + Theme.itemPadding * 2
+            readonly property int indicatorGap: 4
+            readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
+            readonly property int dockItemWidth:  itemExtent + (isVertical ? sideIndicatorWidth + indicatorGap : 0)
+            readonly property int dockItemHeight: itemExtent + (isVertical ? 0 : Theme.dotSize + indicatorGap)
             readonly property int marginTop:     numberOrDefault(DaemonBridge.config.margin_top,    0)
             readonly property int marginBottom:  numberOrDefault(DaemonBridge.config.margin_bottom,  5)
             readonly property int marginLeft:    numberOrDefault(DaemonBridge.config.margin_left,    0)
@@ -250,42 +254,71 @@ Scope {
                 Component {
                     id: launcherButtonComponent
 
-                    Rectangle {
-                        id: launcherBg
-                        width:  screenScope.itemExtent
-                        height: screenScope.itemExtent
-                        color:  launcherMouse.containsMouse ? Theme.itemHover : "transparent"
-                        radius: Math.min(width / 2, Math.max(4, Math.round(Theme.iconSize * 0.25)))
+                    Item {
+                        id: launcherItem
+                        width: screenScope.dockItemWidth
+                        height: screenScope.dockItemHeight
 
-                        readonly property real dotSize: Math.max(2, Math.round(Theme.iconSize / 8))
-                        readonly property real dotSpacing: Math.max(1, Math.round(Theme.iconSize / 12))
+                        readonly property string customIconStr: DaemonBridge.config.launcher_icon || "dots"
+                        readonly property bool useDots: customIconStr === "" || customIconStr === "0" || customIconStr === "none" || customIconStr === "auto" || customIconStr === "dots"
+                        
+                        readonly property int hoverSizeParam: DaemonBridge.config.launcher_hover_bg_size || 0
+                        readonly property int hoverBgSize: hoverSizeParam > 0 ? hoverSizeParam : screenScope.itemExtent
+                        readonly property bool showHoverBg: DaemonBridge.config.launcher_hover_bg !== false
 
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        scale: launcherMouse.containsMouse ? 1.08 : 1.0
-                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                        Grid {
+                        Rectangle {
+                            id: launcherBg
                             anchors.centerIn: parent
-                            columns: 3
-                            spacing: launcherBg.dotSpacing
+                            width:  launcherItem.hoverBgSize
+                            height: launcherItem.hoverBgSize
+                            color:  (launcherItem.showHoverBg && launcherMouse.containsMouse) ? Theme.itemHover : "transparent"
+                            radius: Math.min(width / 2, Math.max(4, Math.round(width * 0.25)))
 
-                            Repeater {
-                                model: 9
-                                Rectangle {
-                                    width: launcherBg.dotSize; height: launcherBg.dotSize; radius: launcherBg.dotSize / 2
-                                    color: launcherMouse.containsMouse
-                                           ? Theme.accentColor : Theme.textColor
-                                    Behavior on color { ColorAnimation { duration: 120 } }
+                            readonly property real customSize: DaemonBridge.config.launcher_icon_size || 0
+                            readonly property real baseSize: customSize > 0 ? customSize : Theme.iconSize + 2
+                            readonly property real targetGridSize: baseSize
+                            readonly property real dotSize: Math.max(2, Math.round(targetGridSize / 5))
+                            readonly property real dotSpacing: Math.max(1, Math.round(targetGridSize / 8))
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            scale: launcherMouse.containsMouse ? 1.08 : 1.0
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                            Grid {
+                                anchors.centerIn: parent
+                                columns: 3
+                                spacing: launcherBg.dotSpacing
+                                visible: launcherItem.useDots
+
+                                Repeater {
+                                    model: 9
+                                    Rectangle {
+                                        width: launcherBg.dotSize; height: launcherBg.dotSize; radius: launcherBg.dotSize / 2
+                                        color: launcherMouse.containsMouse
+                                               ? Theme.accentColor : Theme.textColor
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                    }
                                 }
                             }
-                        }
 
-                        MouseArea {
-                            id: launcherMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                DaemonBridge.launchCmd(DaemonBridge.config.launcher_cmd || "fuzzel");
+                            Text {
+                                anchors.centerIn: parent
+                                visible: !launcherItem.useDots
+                                text: launcherItem.customIconStr
+                                font.family: Theme.fontFamily
+                                font.weight: Theme.fontWeight
+                                font.pixelSize: launcherBg.baseSize
+                                color: launcherMouse.containsMouse ? Theme.accentColor : Theme.textColor
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                            }
+
+                            MouseArea {
+                                id: launcherMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    DaemonBridge.launchCmd(DaemonBridge.config.launcher_cmd || "fuzzel");
+                                }
                             }
                         }
                     }
@@ -296,12 +329,12 @@ Scope {
                     id: separatorComponent
 
                     Item {
-                        width:  screenScope.isVertical ? screenScope.itemExtent : 12
-                        height: screenScope.isVertical ? 12 : screenScope.itemExtent
+                        width:  screenScope.isVertical ? screenScope.dockItemWidth : 12
+                        height: screenScope.isVertical ? 12 : screenScope.dockItemHeight
 
                         Rectangle {
-                            width:  screenScope.isVertical ? parent.width * 0.4 : 2
-                            height: screenScope.isVertical ? 2 : parent.height * 0.4
+                            width:  screenScope.isVertical ? screenScope.itemExtent * 0.4 : 2
+                            height: screenScope.isVertical ? 2 : screenScope.itemExtent * 0.4
                             anchors.centerIn: parent
                             color: Theme.bgBorder
                             radius: 1

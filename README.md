@@ -164,8 +164,14 @@ Common config keys:
 | `HotspotDelay` | Edge reveal sensitivity for auto-hide |
 | `LauncherCmd` | Command run by the launcher button |
 | `LauncherPos` | Launcher button position: `start`, `end`, or `none` |
+| `LauncherIcon` | Icon or text for the launcher (default `dots`) |
+| `LauncherIconSize` | Size of the launcher icon (`0` for auto) |
+| `LauncherHoverBg` | Show hover background for the launcher (`true`/`false`) |
+| `LauncherHoverBgSize` | Size of the hover background (`0` for auto) |
 | `WorkspaceCount` | Workspaces shown in the right-click move menu |
 | `[Margins]` | Extra edge spacing |
+| `[Font] Family` | Font family used for text (e.g. `Sans`, `FiraCode Nerd Font`) |
+| `[Font] Weight` | Font weight (e.g. `Normal`, `Bold`) |
 
 ## Pinned Apps
 

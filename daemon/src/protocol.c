@@ -56,6 +56,18 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_string(cfg->launcher_cmd ? cfg->launcher_cmd : ""));
     json_object_object_add(obj, "launcher_pos",
         json_object_new_string(cfg->launcher_pos ? cfg->launcher_pos : "start"));
+    json_object_object_add(obj, "launcher_icon",
+        json_object_new_string(cfg->launcher_icon ? cfg->launcher_icon : "dots"));
+    json_object_object_add(obj, "launcher_icon_size",
+        json_object_new_int(cfg->launcher_icon_size));
+    json_object_object_add(obj, "launcher_hover_bg",
+        json_object_new_boolean(cfg->launcher_hover_bg));
+    json_object_object_add(obj, "launcher_hover_bg_size",
+        json_object_new_int(cfg->launcher_hover_bg_size));
+    json_object_object_add(obj, "font_family",
+        json_object_new_string(cfg->font_family ? cfg->font_family : "FiraCode Nerd Font"));
+    json_object_object_add(obj, "font_weight",
+        json_object_new_string(cfg->font_weight ? cfg->font_weight : "Bold"));
     json_object_object_add(obj, "workspace_count",
         json_object_new_int(cfg->workspace_count));
     json_object_object_add(obj, "margin_top",
