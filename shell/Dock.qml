@@ -48,6 +48,7 @@ Scope {
             readonly property bool autohide:      Boolean(DaemonBridge.config.autohide)
             readonly property bool showLauncher:   normalizedLauncherPos(DaemonBridge.config.launcher_pos) !== "none"
             readonly property bool launcherAtEnd:  normalizedLauncherPos(DaemonBridge.config.launcher_pos) === "end"
+            readonly property bool snappyMode:     DaemonBridge.config.mode === "snappy"
 
             /* ── Layout metrics ──────────────────────────────────────── */
             readonly property int visibleItemCount: DaemonBridge.dockItems.length
@@ -66,14 +67,25 @@ Scope {
             readonly property bool wantsFullCrossAxis: Boolean(DaemonBridge.config.full_width) || alignStart || alignEnd
 
             /* ── Dock content dimensions ─────────────────────────────── */
-            readonly property real dockContentWidth:  mainLayout.implicitWidth  + Theme.dockPadding * 2
-            readonly property real dockContentHeight: mainLayout.implicitHeight + Theme.dockPadding * 2
+            /* The dock background (dockBackground) stays at base size.
+               The PanelWindow is taller/wider by snappyHeadroom so the
+               compositor does not clip magnified icons.  The extra space
+               is transparent and sits on the "away from edge" side.
+               In static mode headroom is 0, so panel == background.    */
+            readonly property real snappyMagnification: snappyMode
+                                                       ? Math.max(0.0, Math.min(2.0, DaemonBridge.config.magnification || 0.78))
+                                                       : 0.0
+            readonly property real snappyHeadroom: snappyMode
+                                                   ? Math.ceil(Theme.iconSize * snappyMagnification * 1.1)
+                                                   : 0
+            readonly property real dockBaseWidth:   mainLayout.implicitWidth  + Theme.dockPadding * 2
+            readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth:  isHorizontal
-                                                ? (wantsFullCrossAxis ? modelData.width : dockContentWidth)
-                                                : dockContentWidth
+                                                ? (wantsFullCrossAxis ? modelData.width : dockBaseWidth)
+                                                : dockBaseWidth + (isVertical ? snappyHeadroom : 0)
             readonly property real panelHeight: isVertical
-                                                ? (wantsFullCrossAxis ? modelData.height : dockContentHeight)
-                                                : dockContentHeight
+                                                ? (wantsFullCrossAxis ? modelData.height : dockBaseHeight)
+                                                : dockBaseHeight + (isHorizontal ? snappyHeadroom : 0)
 
             /* ── AutoHide metrics ────────────────────────────────────── */
 
@@ -85,6 +97,12 @@ Scope {
                Negative, pushing the panel offscreen except edgeStripSize px. */
             readonly property real hiddenEdgeMargin: edgeStripSize
                                                      - (isVertical ? panelWidth : panelHeight)
+
+            /* ── Snappy mode mouse tracking ──────────────────────────── */
+            readonly property real pointerUnset: -100000
+            readonly property real snappyAxisMargin: Theme.iconSize * 0.75
+            property real snappyMouseX: pointerUnset
+            property real snappyMouseY: pointerUnset
 
             /* ── AutoHide state ──────────────────────────────────────── */
             property bool dockRevealed: true
@@ -111,6 +129,31 @@ Scope {
                     return configuredMargin;
                 return configuredMargin
                        + _hideProgress * (hiddenEdgeMargin - configuredMargin);
+            }
+
+            function clearSnappyPointer() {
+                snappyMouseX = pointerUnset;
+                snappyMouseY = pointerUnset;
+            }
+
+            function updateSnappyPointerFromContainer(x, y) {
+                if (!snappyMode) {
+                    clearSnappyPointer();
+                    return;
+                }
+
+                var mapped = dockContainer.mapToItem(dockLayout, x, y);
+                var axisValue = isVertical ? mapped.y : mapped.x;
+                var axisSize = isVertical ? dockLayout.height : dockLayout.width;
+                if (axisSize <= 0
+                    || axisValue < -snappyAxisMargin
+                    || axisValue > axisSize + snappyAxisMargin) {
+                    clearSnappyPointer();
+                    return;
+                }
+
+                snappyMouseX = mapped.x;
+                snappyMouseY = mapped.y;
             }
 
             /* ── Utility functions ───────────────────────────────────── */
@@ -185,6 +228,7 @@ Scope {
                 hideTimer.stop();
                 initialHideTimer.stop();
                 mouseInDock = false;
+                clearSnappyPointer();
                 dockRevealed = true;
 
                 if (autohide)
@@ -342,8 +386,11 @@ Scope {
                     }
                 }
 
-                /* ── Dock container (background + layout) ────────────── */
-                Rectangle {
+                /* ── Dock container (input region, full panel size) ──── */
+                /* dockContainer is the full panel size so hover/click
+                   detection works in the magnification overflow zone.
+                   The visual background is a child Rectangle.           */
+                Item {
                     id: dockContainer
 
                     anchors.left: screenScope.isLeft || (screenScope.isHorizontal && screenScope.alignStart)
@@ -359,25 +406,53 @@ Scope {
                     anchors.verticalCenter: screenScope.isVertical && screenScope.alignCenter
                                             ? parent.verticalCenter : undefined
 
-                    width:  screenScope.dockContentWidth
-                    height: screenScope.dockContentHeight
+                    width:  screenScope.isHorizontal ? screenScope.dockBaseWidth
+                                                    : screenScope.dockBaseWidth + screenScope.snappyHeadroom
+                    height: screenScope.isHorizontal ? screenScope.dockBaseHeight + screenScope.snappyHeadroom
+                                                    : screenScope.dockBaseHeight
 
-                    radius: Theme.dockRadius
-                    color:  Theme.bgColor
-                    border.color: Theme.bgBorder
-                    border.width: 1
+                    clip: false
 
-                    Behavior on width {
-                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-                    }
+                    /* ── Visual dock background (fixed base size) ────── */
+                    Rectangle {
+                        id: dockBackground
 
-                    Behavior on height {
-                        NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                        width:  screenScope.dockBaseWidth
+                        height: screenScope.dockBaseHeight
+
+                        /* Anchor to the screen edge within the container. */
+                        anchors.bottom: screenScope.isBottom ? parent.bottom : undefined
+                        anchors.top:    screenScope.isTop    ? parent.top    : undefined
+                        anchors.left:   screenScope.isLeft   ? parent.left   : undefined
+                        anchors.right:  screenScope.isRight  ? parent.right  : undefined
+                        /* Center on the main axis */
+                        anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
+                        anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
+
+                        radius: Theme.dockRadius
+                        color:  Theme.bgColor
+                        border.color: Theme.bgBorder
+                        border.width: 1
                     }
 
                     Grid {
                         id: mainLayout
-                        anchors.centerIn: parent
+                        clip: false
+
+                        /* Anchor to the screen edge so icons overflow
+                           away from the edge into the headroom space.   */
+                        anchors.bottom: screenScope.isBottom ? parent.bottom : undefined
+                        anchors.bottomMargin: screenScope.isBottom ? Theme.dockPadding : 0
+                        anchors.top:    screenScope.isTop    ? parent.top    : undefined
+                        anchors.topMargin: screenScope.isTop ? Theme.dockPadding : 0
+                        anchors.left:   screenScope.isLeft   ? parent.left   : undefined
+                        anchors.leftMargin: screenScope.isLeft ? Theme.dockPadding : 0
+                        anchors.right:  screenScope.isRight  ? parent.right  : undefined
+                        anchors.rightMargin: screenScope.isRight ? Theme.dockPadding : 0
+
+                        anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
+                        anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
+
                         columns: screenScope.isVertical ? 1 : 5
                         spacing: Theme.itemSpacing
 
@@ -397,6 +472,7 @@ Scope {
 
                         Grid {
                             id: dockLayout
+                            clip: false
                             columns: screenScope.isVertical ? 1 : Math.max(1, DaemonBridge.dockItems.length)
                             spacing: Theme.itemSpacing
 
@@ -426,6 +502,11 @@ Scope {
                                     isPinned:      modelData.isPinned      || false
                                     instances:     modelData.instances     || []
                                     size:          Theme.iconSize
+                                    dockMouseX:    screenScope.snappyMouseX
+                                    dockMouseY:    screenScope.snappyMouseY
+                                    dockPointerUnset: screenScope.pointerUnset
+                                    magnification: DaemonBridge.config.magnification || 0.78
+                                    spread:        DaemonBridge.config.spread || 3
                                 }
                             }
                         }
@@ -445,6 +526,25 @@ Scope {
                         }
                     }
 
+                    /* ── Snappy mode: passive pointer tracker ──────────── */
+                    HoverHandler {
+                        id: snappyPointerTracker
+                        enabled: screenScope.snappyMode
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        target: null
+
+                        onPointChanged: {
+                            screenScope.updateSnappyPointerFromContainer(point.position.x, point.position.y);
+                        }
+
+                        onHoveredChanged: {
+                            if (hovered)
+                                screenScope.updateSnappyPointerFromContainer(point.position.x, point.position.y);
+                            else
+                                screenScope.clearSnappyPointer();
+                        }
+                    }
+
                     /* Hover detection for the dock.
                        When hidden, the compositor clips dockContainer
                        to the visible edge strip — hovering those pixels
@@ -459,6 +559,7 @@ Scope {
                                 screenScope.showDock();
                             } else {
                                 screenScope.mouseInDock = false;
+                                screenScope.clearSnappyPointer();
                                 screenScope.scheduleHide();
                             }
                         }

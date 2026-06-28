@@ -10,6 +10,11 @@
  *  Hover:
  *    - Subtle scale-up
  *    - Tooltip above icon
+ *
+ *  Snappy mode (DaemonBridge.config.mode === "snappy"):
+ *    - Gaussian magnification: icons scale up based on mouse proximity.
+ *    - Layout cells stay fixed so the dock does not jitter under the cursor.
+ *    - Icons lift away from the screen edge as they grow.
  */
 import QtQuick
 import Quickshell
@@ -31,15 +36,6 @@ Item {
     property string itemId: itemRoot.className + "_" + itemRoot.title
     property bool menuVisible: DaemonBridge.activeMenuId === itemRoot.itemId
 
-    function iconSource() {
-        var name = itemRoot.icon || Theme.iconFallback;
-        if (!name)
-            return "";
-        if (name.charAt(0) === "/")
-            return "file://" + name;
-        return Quickshell.iconPath(name, Theme.iconFallback);
-    }
-
     property string dockPosition: {
         var pos = String(DaemonBridge.config.position || "bottom").toLowerCase();
         if (pos === "top" || pos === "bottom" || pos === "left" || pos === "right")
@@ -53,9 +49,79 @@ Item {
     readonly property int indicatorGap: 4
     readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
 
-    // Fixed implicit sizes keep the dock from shifting as dot count changes.
-    implicitWidth:  size + Theme.itemPadding * 2 + (isVertical ? sideIndicatorWidth + indicatorGap : 0)
-    implicitHeight: size + Theme.itemPadding * 2 + (isVertical ? 0 : Theme.dotSize + indicatorGap)
+    /* Fixed implicit sizes keep the dock from shifting while icons animate. */
+    readonly property real baseWidth: size + Theme.itemPadding * 2
+                                      + (isVertical ? sideIndicatorWidth + indicatorGap : 0)
+    readonly property real baseHeight: size + Theme.itemPadding * 2
+                                       + (isVertical ? 0 : Theme.dotSize + indicatorGap)
+
+    /* ── Snappy mode input from Dock.qml ─────────────────────────── */
+    property real dockMouseX: -100000
+    property real dockMouseY: -100000
+    property real dockPointerUnset: -100000
+
+    /* Config-driven magnification tuning */
+    property real magnification: 0.78
+    property int  spread: 3
+
+    readonly property bool snappyMode: DaemonBridge.config.mode === "snappy"
+    readonly property bool hasDockPointer: dockMouseX !== dockPointerUnset
+                                           && dockMouseY !== dockPointerUnset
+    readonly property real snappyAxisMouse: isVertical ? dockMouseY : dockMouseX
+    readonly property real snappyAxisCenter: isVertical
+                                             ? itemRoot.y + baseHeight / 2.0
+                                             : itemRoot.x + baseWidth / 2.0
+
+    /* Gaussian bell curve: closest icon peaks, neighbors taper smoothly.
+     * sigma derives from spread (how many icon-widths of falloff).
+     * magnification controls the peak scale boost above 1.0.
+     */
+    readonly property real snappyMaxScale: 1.0 + Math.max(0.0, Math.min(2.0, magnification))
+    readonly property real snappySigma: {
+        var cellSize = isVertical ? baseHeight : baseWidth;
+        /* spread=3 means ~3 icon cells of visible influence */
+        return Math.max(cellSize * spread * 0.42, 40);
+    }
+    readonly property real snappyInfluenceRadius: snappySigma * 2.8
+
+    function gaussianScale(distance) {
+        var d = Math.abs(distance);
+        if (d >= snappyInfluenceRadius)
+            return 1.0;
+
+        var influence = Math.exp(-(d * d) / (2.0 * snappySigma * snappySigma));
+        return 1.0 + (snappyMaxScale - 1.0) * influence;
+    }
+
+    property real snappyScale: {
+        if (!snappyMode || !hasDockPointer)
+            return 1.0;
+        return gaussianScale(snappyAxisCenter - snappyAxisMouse);
+    }
+
+    Behavior on snappyScale {
+        NumberAnimation { duration: 85; easing.type: Easing.OutCubic }
+    }
+
+    readonly property real snappyLift: (snappyScale - 1.0) * size * 0.85
+    readonly property real snappyTranslateX: (!snappyMode || !isVertical) ? 0
+                                           : (isLeft ? snappyLift : -snappyLift)
+    readonly property real snappyTranslateY: (!snappyMode || isVertical) ? 0
+                                           : (isTop ? snappyLift : -snappyLift)
+
+    z: snappyMode ? snappyScale : (mouseArea.containsMouse ? 1 : 0)
+
+    function iconSource() {
+        var name = itemRoot.icon || Theme.iconFallback;
+        if (!name)
+            return "";
+        if (name.charAt(0) === "/")
+            return "file://" + name;
+        return Quickshell.iconPath(name, Theme.iconFallback);
+    }
+
+    implicitWidth:  baseWidth
+    implicitHeight: baseHeight
 
     property bool showTooltip: false
 
@@ -79,16 +145,18 @@ Item {
     Rectangle {
         id: iconBg
 
+        readonly property real iconBaseExtent: itemRoot.size + Theme.itemPadding * 2
+
         anchors.top: (!isVertical && !isTop) ? parent.top : undefined
         anchors.bottom: (!isVertical && isTop) ? parent.bottom : undefined
-        anchors.horizontalCenter: isVertical ? undefined : parent.horizontalCenter
+        anchors.horizontalCenter: !isVertical ? parent.horizontalCenter : undefined
 
         anchors.verticalCenter: isVertical ? parent.verticalCenter : undefined
         anchors.right: (isVertical && isLeft) ? parent.right : undefined
         anchors.left: (isVertical && isRight) ? parent.left : undefined
 
-        width:  itemRoot.size + Theme.itemPadding * 2
-        height: itemRoot.size + Theme.itemPadding * 2
+        width:  iconBaseExtent
+        height: iconBaseExtent
         radius: 12
         color:  mouseArea.containsMouse
                     ? (itemRoot.isActive ? Theme.itemActive : Theme.itemHover)
@@ -98,10 +166,17 @@ Item {
             ColorAnimation { duration: 120 }
         }
 
-        /* Hover scale effect */
-        scale: mouseArea.containsMouse ? 1.08 : 1.0
+        scale: itemRoot.snappyMode ? itemRoot.snappyScale
+                                   : (mouseArea.containsMouse ? 1.08 : 1.0)
+
         Behavior on scale {
+            enabled: !itemRoot.snappyMode
             NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+        }
+
+        transform: Translate {
+            x: itemRoot.snappyTranslateX
+            y: itemRoot.snappyTranslateY
         }
 
         /* Icon image via Qt icon engine */
@@ -110,9 +185,11 @@ Item {
             anchors.centerIn: parent
             width:  itemRoot.size
             height: itemRoot.size
-            sourceSize: Qt.size(itemRoot.size, itemRoot.size)
+            sourceSize: Qt.size(Math.ceil(itemRoot.size * itemRoot.snappyMaxScale),
+                                Math.ceil(itemRoot.size * itemRoot.snappyMaxScale))
             source: itemRoot.iconSource()
             smooth: true
+            mipmap: true
             asynchronous: true
         }
 
@@ -168,7 +245,7 @@ Item {
     PopupWindow {
         id: tooltipPopup
         visible: itemRoot.showTooltip && !itemRoot.menuVisible
-        anchor.item: itemRoot
+        anchor.item: iconBg
         anchor.edges: {
             var pos = DaemonBridge.config.position || "bottom";
             if (pos === "top") return Edges.Bottom;
@@ -211,7 +288,7 @@ Item {
         id: calendarPopup
         visible: itemRoot.menuVisible
         grabFocus: true
-        anchor.item: itemRoot
+        anchor.item: iconBg
         anchor.edges: {
             var pos = DaemonBridge.config.position || "bottom";
             if (pos === "top") return Edges.Bottom;

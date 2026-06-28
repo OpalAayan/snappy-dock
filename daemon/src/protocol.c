@@ -80,6 +80,14 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_int(cfg->margin_right));
     json_object_object_add(obj, "hotspot_delay",
         json_object_new_int(cfg->hotspot_delay));
+    json_object_object_add(obj, "mode",
+        json_object_new_string(cfg->mode ? cfg->mode : "static"));
+    json_object_object_add(obj, "spread",
+        json_object_new_int(cfg->spread));
+    json_object_object_add(obj, "icon_spacing",
+        json_object_new_int(cfg->icon_spacing));
+    json_object_object_add(obj, "magnification",
+        json_object_new_double(cfg->magnification));
 
     const char *str = json_object_to_json_string_ext(obj,
         JSON_C_TO_STRING_PLAIN);

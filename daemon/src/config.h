@@ -44,6 +44,12 @@ typedef struct {
     char *font_weight;
     int   workspace_count;  /* right-click "Send to WS" submenu count    */
     int   hotspot_delay;    /* auto-hide velocity filter (ms), 0=instant */
+    char *mode;             /* "static" | "snappy"                        */
+
+    /* Snappy mode tuning */
+    int    spread;          /* neighbor influence radius (icon-widths) 1–6 */
+    int    icon_spacing;    /* gap between dock items (px), default 2      */
+    double magnification;   /* extra scale on hover (0.0–2.0), default 0.78*/
 } DockConfig;
 
 /* ── API ─────────────────────────────────────────────────────────────── */

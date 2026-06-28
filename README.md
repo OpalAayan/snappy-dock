@@ -155,6 +155,7 @@ Common config keys:
 | --- | --- |
 | `Position` | Dock edge: `bottom`, `top`, `left`, or `right` |
 | `Alignment` | Placement along the edge: `center`, `start`, or `end` |
+| `Mode` | Dock animation mode: `static` or `snappy` (macOS-style magnification) |
 | `[Icons] IconSize` | Icon size in pixels |
 | `[Icons] Theme` | Qt icon theme name, for example `Tela-dracula` |
 | `[Icons] Fallback` | Icon used when a themed app icon is missing |

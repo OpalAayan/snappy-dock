@@ -48,7 +48,11 @@ Singleton {
         margin_bottom: 5,
         margin_left: 0,
         margin_right: 0,
-        hotspot_delay: 50
+        hotspot_delay: 50,
+        mode: "static",
+        spread: 3,
+        icon_spacing: 2,
+        magnification: 0.78
     })
 
     /* ── Computed display list ───────────────────────────────────── */
@@ -174,6 +178,7 @@ Singleton {
             Theme.iconFallback = obj.icon_fallback || "application-x-executable";
             Theme.fontFamily = obj.font_family || "Sans";
             Theme.fontWeight = (obj.font_weight && obj.font_weight.toLowerCase() === "bold") ? Font.Bold : Font.Normal;
+            Theme.itemSpacing = (obj.icon_spacing !== undefined && obj.icon_spacing >= 0) ? obj.icon_spacing : 2;
         }
         else if (obj.type === "state") {
             clients   = obj.clients  || [];

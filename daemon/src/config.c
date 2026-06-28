@@ -13,6 +13,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "config.h"
+#include "config_internal.h"
 #include "log.h"
 
 #include <ctype.h>
@@ -51,6 +52,14 @@ static bool parse_bool(const char *val)
     return str_eq_ci(val, "true") || str_eq_ci(val, "yes") || strcmp(val, "1") == 0;
 }
 
+static double parse_double(const char *val, double fallback)
+{
+    if (!val || !*val) return fallback;
+    char *end;
+    double d = strtod(val, &end);
+    return (end != val) ? d : fallback;
+}
+
 static const char *normal_icon_fallback(const char *val)
 {
     if (!val || !*val || str_eq_ci(val, "default"))
@@ -86,6 +95,10 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->font_weight = str_dup("Bold");
     cfg->workspace_count = 5;
     cfg->hotspot_delay  = 50;
+    cfg->mode           = str_dup("static");
+    cfg->spread         = 3;
+    cfg->icon_spacing   = 2;
+    cfg->magnification  = 0.78;
 }
 
 /* ── INI parser ──────────────────────────────────────────────────────── */
@@ -135,6 +148,20 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
             cfg->workspace_count = atoi(val);
         } else if (str_eq_ci(key, "HotspotDelay")) {
             cfg->hotspot_delay = atoi(val);
+        } else if (str_eq_ci(key, "Mode")) {
+            free(cfg->mode);
+            cfg->mode = str_dup(val);
+        } else if (str_eq_ci(key, "Spread")) {
+            cfg->spread = atoi(val);
+            if (cfg->spread < 1) cfg->spread = 1;
+            if (cfg->spread > 6) cfg->spread = 6;
+        } else if (str_eq_ci(key, "IconSpacing")) {
+            cfg->icon_spacing = atoi(val);
+            if (cfg->icon_spacing < 0) cfg->icon_spacing = 0;
+        } else if (str_eq_ci(key, "Magnification")) {
+            cfg->magnification = parse_double(val, 0.78);
+            if (cfg->magnification < 0.0) cfg->magnification = 0.0;
+            if (cfg->magnification > 2.0) cfg->magnification = 2.0;
         }
     } else if (str_eq_ci(section, "Margins")) {
         if (str_eq_ci(key, "Top"))         cfg->margin_top    = atoi(val);
@@ -238,6 +265,34 @@ static void config_parse_cli(DockConfig *cfg, int *argc, char ***argv)
     *argc = out;
 }
 
+/* ── Validation ──────────────────────────────────────────────────────── */
+
+/*
+ * Normalise the mode field to a known value.
+ * Accepts "static" or "snappy" (case-insensitive).
+ * Any unrecognised value → warning + fallback to "static".
+ */
+static void validate_mode(DockConfig *cfg)
+{
+    if (!cfg->mode || !cfg->mode[0]) {
+        free(cfg->mode);
+        cfg->mode = strdup("static");
+        return;
+    }
+
+    /* Lowercase in-place for comparison */
+    for (char *p = cfg->mode; *p; p++)
+        *p = (char)tolower((unsigned char)*p);
+
+    if (strcmp(cfg->mode, "static") == 0 ||
+        strcmp(cfg->mode, "snappy") == 0)
+        return;   /* valid */
+
+    LOG_WRN("Unknown mode '%s', falling back to 'static'", cfg->mode);
+    free(cfg->mode);
+    cfg->mode = strdup("static");
+}
+
 /* ── Public API ──────────────────────────────────────────────────────── */
 
 void config_parse(int *argc, char ***argv)
@@ -261,6 +316,9 @@ void config_parse(int *argc, char ***argv)
 
     if (argc && argv)
         config_parse_cli(&s_cfg, argc, argv);
+
+    /* Post-parse validation */
+    validate_mode(&s_cfg);
 }
 
 const DockConfig *config_get(void)
@@ -280,5 +338,40 @@ void config_free(void)
     free(s_cfg.launcher_icon);
     free(s_cfg.font_family);
     free(s_cfg.font_weight);
+    free(s_cfg.mode);
     memset(&s_cfg, 0, sizeof(s_cfg));
+}
+
+/* ── Test-facing wrappers (see config_internal.h) ────────────────────── */
+
+void config_free_fields(DockConfig *cfg)
+{
+    free(cfg->position);
+    free(cfg->alignment);
+    free(cfg->icon_theme);
+    free(cfg->icon_fallback);
+    free(cfg->layer);
+    free(cfg->launcher_cmd);
+    free(cfg->launcher_pos);
+    free(cfg->launcher_icon);
+    free(cfg->font_family);
+    free(cfg->font_weight);
+    free(cfg->mode);
+    memset(cfg, 0, sizeof(*cfg));
+}
+
+void config_set_defaults_for_test(DockConfig *cfg)
+{
+    config_set_defaults(cfg);
+}
+
+void config_apply_ini_key_for_test(DockConfig *cfg, const char *section,
+                                   const char *key, const char *val)
+{
+    config_apply_ini_key(cfg, section, key, val);
+}
+
+void config_validate_mode_for_test(DockConfig *cfg)
+{
+    validate_mode(cfg);
 }

@@ -84,6 +84,31 @@ WorkspaceCount=5
 # 0 means any edge hover reveals the dock.
 HotspotDelay=50
 
+# Dock animation mode.
+# static  — fixed-size icons (default).
+# snappy  — macOS-style magnification: icons grow under the cursor
+#            and push neighbors sideways.
+Mode=static
+
+# Magnification scale boost for snappy mode.
+# 0.0 means no magnification (icons don't grow).
+# 0.78 is the default (1.78x peak scale).
+# Maximum is 2.0 (3x peak scale).
+# Has no effect in static mode.
+Magnification=0.78
+
+# How many neighboring icons are visually affected by magnification.
+# Range: 1–6.  1 = only the hovered icon grows.
+# 3 (default) = the hovered icon plus ~2 neighbors on each side.
+# Higher values produce a wider, gentler curve.
+# Has no effect in static mode.
+Spread=3
+
+# Gap between icon cells in the dock, in pixels.
+# Applies to both static and snappy modes.
+# 0 means icons touch with no gap.
+IconSpacing=2
+
 [Icons]
 
 # Icon size in pixels.

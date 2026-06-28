@@ -37,7 +37,7 @@ Singleton {
     readonly property int dockRadius:     16
     readonly property int dockPadding:    6
     readonly property int itemPadding:    5
-    readonly property int itemSpacing:    2
+    property int itemSpacing:    2
     readonly property int dotSize:        4
     readonly property int dotActiveWidth: 14
     readonly property int dotSpacing:     3
