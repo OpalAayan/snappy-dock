@@ -75,15 +75,24 @@ Scope {
             readonly property real snappyMagnification: snappyMode
                                                        ? Math.max(0.0, Math.min(2.0, DaemonBridge.config.magnification || 0.78))
                                                        : 0.0
+            /* Cross-axis headroom: the magnified icon grows AND lifts away
+               from the dock edge.  We need room for both.
+               growth = (maxScale-1) * extent/2   (half the size increase)
+               lift   = (maxScale-1) * iconSize * 0.85
+               Total  = growth + lift + safety margin                       */
+            readonly property real _snappyExtent: Theme.iconSize + Theme.itemPadding * 2
+            readonly property real _snappyMaxScale: 1.0 + snappyMagnification
             readonly property real snappyHeadroom: snappyMode
-                                                   ? Math.ceil(Theme.iconSize * snappyMagnification * 1.1)
-                                                   : 0
+                ? Math.ceil((_snappyMaxScale - 1.0) * _snappyExtent * 0.5
+                          + (_snappyMaxScale - 1.0) * Theme.iconSize * 0.85
+                          + 8)
+                : 0
             /* Main-axis overflow: edge icons grow wider/taller when magnified
                and get clipped at the panel surface boundary.  Add symmetric
                padding so they have room.  (cross-axis uses snappyHeadroom.) */
             readonly property real snappyMainOverflow: snappyMode
-                                                      ? Math.ceil(Theme.iconSize * snappyMagnification * 0.55) * 2
-                                                      : 0
+                ? Math.ceil((_snappyMaxScale - 1.0) * _snappyExtent * 0.5 + 8) * 2
+                : 0
             readonly property real dockBaseWidth:   mainLayout.implicitWidth  + Theme.dockPadding * 2
             readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth:  isHorizontal
@@ -508,6 +517,7 @@ Scope {
                                     isPinned:      modelData.isPinned      || false
                                     instances:     modelData.instances     || []
                                     size:          Theme.iconSize
+                                    screenName:    screenScope.modelData.name || ""
                                     dockMouseX:    screenScope.snappyMouseX
                                     dockMouseY:    screenScope.snappyMouseY
                                     dockPointerUnset: screenScope.pointerUnset

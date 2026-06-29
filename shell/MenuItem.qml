@@ -101,9 +101,10 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
         anchors.rightMargin: 10
-        text: root.rightText === ">" ? "›" : root.rightText
-        color: root.rightText === ">" ? Theme.accentColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.45)
-        font.pixelSize: root.rightText === ">" ? 16 : 13
+        readonly property bool isChevron: root.rightText === ">" || root.rightText === "<"
+        text: root.rightText === ">" ? "›" : (root.rightText === "<" ? "‹" : root.rightText)
+        color: isChevron ? Theme.accentColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.45)
+        font.pixelSize: isChevron ? 16 : 13
         font.family: "Inter, Roboto, sans-serif"
     }
 

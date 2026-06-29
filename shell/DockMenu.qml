@@ -310,8 +310,8 @@ FocusScope {
                     MenuItem {
                         text: root.activeInstance ? (root.activeInstance.title || root.className) : ""
                         isBold: true
-                        isBack: true
                         iconSource: root.appIcon
+                        rightText: "<"
                         onClicked: { root.currentPage = 0; }
                     }
 

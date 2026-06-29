@@ -33,7 +33,8 @@ Item {
     required property var    instances
 
     property int size: Theme.iconSize
-    property string itemId: itemRoot.className + "_" + itemRoot.title
+    property string screenName: ""
+    property string itemId: itemRoot.screenName + "_" + itemRoot.className + "_" + itemRoot.title
     property bool menuVisible: DaemonBridge.activeMenuId === itemRoot.itemId
 
     property string dockPosition: {
@@ -173,7 +174,7 @@ Item {
 
         width:  iconBaseExtent
         height: iconBaseExtent
-        radius: 12
+        radius: Math.round(iconBaseExtent * 0.22)
         color:  mouseArea.containsMouse
                     ? (itemRoot.isActive ? Theme.itemActive : Theme.itemHover)
                     : "transparent"
