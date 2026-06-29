@@ -2,6 +2,9 @@
 
 > This isnt  all good yet so try at your own risk
 
+## Showcase
+![meooo](assets/meooo.gif)
+
 Snappy Dock is a small dock for Hyprland.
 
 It has two parts:
