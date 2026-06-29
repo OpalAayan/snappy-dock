@@ -78,13 +78,19 @@ Scope {
             readonly property real snappyHeadroom: snappyMode
                                                    ? Math.ceil(Theme.iconSize * snappyMagnification * 1.1)
                                                    : 0
+            /* Main-axis overflow: edge icons grow wider/taller when magnified
+               and get clipped at the panel surface boundary.  Add symmetric
+               padding so they have room.  (cross-axis uses snappyHeadroom.) */
+            readonly property real snappyMainOverflow: snappyMode
+                                                      ? Math.ceil(Theme.iconSize * snappyMagnification * 0.55) * 2
+                                                      : 0
             readonly property real dockBaseWidth:   mainLayout.implicitWidth  + Theme.dockPadding * 2
             readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth:  isHorizontal
-                                                ? (wantsFullCrossAxis ? modelData.width : dockBaseWidth)
+                                                ? (wantsFullCrossAxis ? modelData.width : dockBaseWidth + (isHorizontal ? snappyMainOverflow : 0))
                                                 : dockBaseWidth + (isVertical ? snappyHeadroom : 0)
             readonly property real panelHeight: isVertical
-                                                ? (wantsFullCrossAxis ? modelData.height : dockBaseHeight)
+                                                ? (wantsFullCrossAxis ? modelData.height : dockBaseHeight + (isVertical ? snappyMainOverflow : 0))
                                                 : dockBaseHeight + (isHorizontal ? snappyHeadroom : 0)
 
             /* ── AutoHide metrics ────────────────────────────────────── */
@@ -406,10 +412,10 @@ Scope {
                     anchors.verticalCenter: screenScope.isVertical && screenScope.alignCenter
                                             ? parent.verticalCenter : undefined
 
-                    width:  screenScope.isHorizontal ? screenScope.dockBaseWidth
+                    width:  screenScope.isHorizontal ? screenScope.dockBaseWidth + screenScope.snappyMainOverflow
                                                     : screenScope.dockBaseWidth + screenScope.snappyHeadroom
                     height: screenScope.isHorizontal ? screenScope.dockBaseHeight + screenScope.snappyHeadroom
-                                                    : screenScope.dockBaseHeight
+                                                    : screenScope.dockBaseHeight + screenScope.snappyMainOverflow
 
                     clip: false
 

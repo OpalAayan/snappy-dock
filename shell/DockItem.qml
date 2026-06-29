@@ -93,10 +93,26 @@ Item {
         return 1.0 + (snappyMaxScale - 1.0) * influence;
     }
 
+    /* When the context menu is open, freeze this icon at peak magnification
+       so it stays lifted and visually connected to the menu popup.
+       Otherwise compute normally from the Gaussian bell curve. */
+    property real _frozenScale: snappyMaxScale
     property real snappyScale: {
-        if (!snappyMode || !hasDockPointer)
+        if (!snappyMode)
+            return 1.0;
+        if (menuVisible)
+            return _frozenScale;
+        if (!hasDockPointer)
             return 1.0;
         return gaussianScale(snappyAxisCenter - snappyAxisMouse);
+    }
+
+    /* Capture the scale at the moment the menu opens so the icon
+       holds exactly where it was, not necessarily at max. */
+    onMenuVisibleChanged: {
+        if (menuVisible && snappyMode) {
+            _frozenScale = Math.max(snappyScale, 1.15);
+        }
     }
 
     Behavior on snappyScale {
@@ -314,6 +330,9 @@ Item {
             isPinned:      itemRoot.isPinned
             instanceCount: itemRoot.instanceCount
             instances:     itemRoot.instances
+            appIcon:       itemRoot.icon || ""
+            snappyMode:    itemRoot.snappyMode
+            dockPosition:  DaemonBridge.config.position || "bottom"
             width:         calendarPopup.implicitWidth
             height:        calendarPopup.implicitHeight
             
@@ -325,8 +344,11 @@ Item {
             if (visible) {
                 itemRoot.showTooltip = false;
                 contextMenu.currentPage = 0;
+                contextMenu._menuOpen = false;
+                contextMenu._menuOpen = true;
                 contextMenu.forceActiveFocus();
             } else if (DaemonBridge.activeMenuId === itemRoot.itemId) {
+                contextMenu._menuOpen = false;
                 DaemonBridge.activeMenuId = "";
             }
         }

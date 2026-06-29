@@ -174,6 +174,9 @@ Common config keys:
 | `[Font] Family` | Font family used for text (e.g. `Sans`, `FiraCode Nerd Font`) |
 | `[Font] Weight` | Font weight (e.g. `Normal`, `Bold`) |
 
+> [!IMPORTANT]
+> **Snappy Mode Constraints:** When using `Mode=snappy`, `ExclusiveZone=auto` does not work reliably due to dynamic geometry changes. You must set `ExclusiveZone` manually to a fixed pixel value (e.g., `48`). It is also highly recommended to use `Layer=overlay` in snappy mode to prevent the compositor from clipping magnified icons.
+
 ## Pinned Apps
 
 Pinned apps are stored here:
@@ -268,6 +271,10 @@ Restart the dock after changing `Theme`; QuickShell reads the Qt icon theme when
 ### The dock does not react to Hyprland
 
 Make sure Snappy Dock is started inside a Hyprland session. The daemon needs Hyprland IPC environment variables such as `HYPRLAND_INSTANCE_SIGNATURE`.
+
+## Roadmap / Future TODOs
+
+- **FullWidth Taskbar Integration**: Currently `FullWidth` stretches the dock, but the UI items remain centered. A future update will make `FullWidth` expand the entire bar into a traditional taskbar layout, automatically adjusting and fitting items along the full length.
 
 ## License
 

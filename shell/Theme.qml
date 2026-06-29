@@ -26,6 +26,8 @@ Singleton {
     readonly property color menuBg:         Qt.rgba(0.08, 0.08, 0.13, 0.92)
     readonly property color menuBorder:     Qt.rgba(1, 1, 1, 0.10)
     readonly property color menuHover:      Qt.rgba(1, 1, 1, 0.08)
+    readonly property color menuAccent:     Qt.rgba(0.80, 0.65, 0.97, 0.12)
+    readonly property color menuActiveBar:  "#cba6f7"
     readonly property color separatorColor: Qt.rgba(1, 1, 1, 0.06)
 
     /* ── Sizes ───────────────────────────────────────────────────── */

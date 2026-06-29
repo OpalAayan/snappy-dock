@@ -32,6 +32,7 @@ Alignment=center
 # Layer-shell layer.
 # Higher layers appear above more windows.
 # Values: background, bottom, top, overlay.
+# IMPORTANT: If Mode=snappy, it is highly recommended to use Layer=overlay.
 Layer=overlay
 
 # Stretch the dock window across the whole screen width.
@@ -42,6 +43,7 @@ FullWidth=false
 # 0 or off: do not reserve space.
 # auto: let the compositor decide.
 # Any number: reserve that many pixels.
+# IMPORTANT: When Mode=snappy, 'auto' only works for static mode. You MUST set this manually (e.g., ExclusiveZone=48).
 ExclusiveZone=0
 
 # Hide the dock when it is not hovered.
