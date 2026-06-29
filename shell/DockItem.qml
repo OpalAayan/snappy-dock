@@ -296,6 +296,7 @@ Item {
                 text: itemRoot.title || itemRoot.className
                 color: Theme.textColor
                 font.pixelSize: 12
+                font.family: Theme.fontFamily
             }
         }
     }

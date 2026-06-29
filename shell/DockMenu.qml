@@ -192,7 +192,7 @@ FocusScope {
                     color: Theme.textColor
                     font.pixelSize: 13
                     font.bold: true
-                    font.family: "Inter, Roboto, sans-serif"
+                    font.family: Theme.fontFamily
                     elide: Text.ElideRight
                 }
 

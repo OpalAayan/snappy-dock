@@ -51,7 +51,7 @@ Rectangle {
         text: "‹"
         color: Theme.accentColor
         font.pixelSize: 16
-        font.family: "Inter, Roboto, sans-serif"
+        font.family: Theme.fontFamily
     }
 
     /* Optional app icon */
@@ -88,7 +88,7 @@ Rectangle {
         color: root.isBold ? Theme.textColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.9)
         font.pixelSize: 13
         font.bold: root.isBold
-        font.family: "Inter, Roboto, sans-serif"
+        font.family: Theme.fontFamily
 
         elide: Text.ElideRight
         clip: true
@@ -105,7 +105,7 @@ Rectangle {
         text: root.rightText === ">" ? "›" : (root.rightText === "<" ? "‹" : root.rightText)
         color: isChevron ? Theme.accentColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.45)
         font.pixelSize: isChevron ? 16 : 13
-        font.family: "Inter, Roboto, sans-serif"
+        font.family: Theme.fontFamily
     }
 
     /* Hover scale micro-animation */

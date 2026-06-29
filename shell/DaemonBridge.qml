@@ -177,7 +177,12 @@ Singleton {
             Theme.iconTheme = obj.icon_theme || "";
             Theme.iconFallback = obj.icon_fallback || "application-x-executable";
             Theme.fontFamily = obj.font_family || "Sans";
-            Theme.fontWeight = (obj.font_weight && obj.font_weight.toLowerCase() === "bold") ? Font.Bold : Font.Normal;
+            var w = (obj.font_weight || "bold").toLowerCase();
+            Theme.fontWeight = w === "light"    ? Font.Light
+                             : w === "medium"   ? Font.Medium
+                             : w === "semibold"  ? Font.DemiBold
+                             : w === "bold"      ? Font.Bold
+                             : Font.Normal;
             Theme.itemSpacing = (obj.icon_spacing !== undefined && obj.icon_spacing >= 0) ? obj.icon_spacing : 2;
         }
         else if (obj.type === "state") {
