@@ -2,10 +2,12 @@
 
 > This isnt  all good yet so try at your own risk
 
-## Showcase
+## Showcase (**snappy mode**)
 <div align="center">
   <img src="assets/meooo.gif" alt="meooo"/>
 </div>
+
+> there is also a boring static mode
 
 
 Snappy Dock is a small dock for Hyprland.
