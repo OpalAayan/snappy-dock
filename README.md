@@ -3,7 +3,10 @@
 > This isnt  all good yet so try at your own risk
 
 ## Showcase
-![meooo](assets/meooo.gif)
+<div align="center">
+  <img src="assets/meooo.gif" alt="meooo"/>
+</div>
+
 
 Snappy Dock is a small dock for Hyprland.
 
