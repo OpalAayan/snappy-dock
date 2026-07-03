@@ -2,7 +2,8 @@
 daemon/build/
 *.o
 *.so
-
+snappydock-d
+build
 # Editor
 *.swp
 *.swo

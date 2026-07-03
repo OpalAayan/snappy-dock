@@ -67,6 +67,8 @@ meson compile -C build
 
 ## Install
 
+### Using Meson
+
 System install, usually to `/usr/local`:
 
 ```sh
@@ -84,6 +86,21 @@ To uninstall a Meson install:
 
 ```sh
 sudo ninja uninstall -C build
+```
+
+### Manual Install (Makefile)
+
+Alternatively, you can build and install using the provided native `Makefile`:
+
+```sh
+make
+sudo make install
+```
+
+To gracefully uninstall and clean up your system afterwards:
+
+```sh
+sudo make uninstall
 ```
 
 ## Run

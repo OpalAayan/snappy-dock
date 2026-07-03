@@ -104,19 +104,19 @@ apply_icon_theme_config() {
     fi
 
     case "$theme" in
-        default|Default|system|System)
-            unset QS_ICON_THEME
-            ;;
-        *)
-            export QS_ICON_THEME="$theme"
-            ;;
+    default | Default | system | System)
+        unset QS_ICON_THEME
+        ;;
+    *)
+        export QS_ICON_THEME="$theme"
+        ;;
     esac
 }
 
 # ── Process management ──────────────────────────────────────────────
 is_running() {
-    pgrep -x "quickshell" >/dev/null 2>&1 && \
-    pgrep -x "snappydock-d" >/dev/null 2>&1
+    pgrep -x "quickshell" >/dev/null 2>&1 &&
+        pgrep -x "snappydock-d" >/dev/null 2>&1
 }
 
 do_kill() {
@@ -155,34 +155,34 @@ do_start() {
 
 # ── Main ────────────────────────────────────────────────────────────
 case "${1:-}" in
-    --kill|-k)
-        do_kill
-        ;;
-    --restart|-r)
-        do_kill
-        sleep 0.3
-        do_start
-        ;;
-    --status|-s)
-        if is_running; then
-            echo "$APP_NAME: running (pid $(pgrep -x snappydock-d))"
-        else
-            echo "$APP_NAME: not running"
-        fi
-        ;;
-    --config|-c)
-        cfg="$(config_dir)/config.ini"
-        echo "Config:  $cfg"
-        echo "Pinned:  $(config_dir)/pinned"
-        if [ ! -f "$cfg" ]; then
-            echo "(config file does not exist yet — using defaults)"
-        fi
-        ;;
-    --version|-v)
-        echo "$APP_NAME $VERSION"
-        ;;
-    --help|-h)
-        cat <<EOF
+--kill | -k)
+    do_kill
+    ;;
+--restart | -r)
+    do_kill
+    sleep 0.3
+    do_start
+    ;;
+--status | -s)
+    if is_running; then
+        echo "$APP_NAME: running (pid $(pgrep -x snappydock-d))"
+    else
+        echo "$APP_NAME: not running"
+    fi
+    ;;
+--config | -c)
+    cfg="$(config_dir)/config.ini"
+    echo "Config:  $cfg"
+    echo "Pinned:  $(config_dir)/pinned"
+    if [ ! -f "$cfg" ]; then
+        echo "(config file does not exist yet — using defaults)"
+    fi
+    ;;
+--version | -v)
+    echo "$APP_NAME $VERSION"
+    ;;
+--help | -h)
+    cat <<EOF
 $APP_NAME $VERSION — lightweight Hyprland dock
 
 USAGE:
@@ -208,16 +208,16 @@ DAEMON FLAGS (passed through):
     -l <layer>        Layer: background | bottom | top | overlay
     -c <cmd>          Launcher command (e.g. "fuzzel")
 EOF
-        ;;
-    ""|--*)
-        # Pass any remaining flags through to snappydock-d via env
-        # (QuickShell doesn't support passing args to child Process easily,
-        #  so for now just start)
-        do_start
-        ;;
-    *)
-        echo "$APP_NAME: unknown option '$1'" >&2
-        echo "Run '$APP_NAME --help' for usage." >&2
-        exit 1
-        ;;
+    ;;
+"" | --*)
+    # Pass any remaining flags through to snappydock-d via env
+    # (QuickShell doesn't support passing args to child Process easily,
+    #  so for now just start)
+    do_start
+    ;;
+*)
+    echo "$APP_NAME: unknown option '$1'" >&2
+    echo "Run '$APP_NAME --help' for usage." >&2
+    exit 1
+    ;;
 esac
