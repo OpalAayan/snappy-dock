@@ -187,7 +187,7 @@ Common config keys:
 | `Layer` | Wayland layer: `background`, `bottom`, `top`, or `overlay` |
 | `ExclusiveZone` | Whether the dock reserves screen space |
 | `AutoHide` | Whether the dock hides after the pointer leaves |
-| `HotspotDelay` | Edge reveal sensitivity for auto-hide |
+| `HotspotDelay` | Delay (ms) before the dock hides after cursor leaves |
 | `LauncherCmd` | Command run by the launcher button |
 | `LauncherPos` | Launcher button position: `start`, `end`, or `none` |
 | `LauncherIcon` | Icon or text for the launcher (default `dots`) |

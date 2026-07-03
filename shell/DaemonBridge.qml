@@ -48,7 +48,7 @@ Singleton {
         margin_bottom: 5,
         margin_left: 0,
         margin_right: 0,
-        hotspot_delay: 50,
+        hotspot_delay: 300,
         mode: "static",
         spread: 3,
         icon_spacing: 2,

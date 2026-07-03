@@ -94,7 +94,7 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->font_family = str_dup("Sans");
     cfg->font_weight = str_dup("Bold");
     cfg->workspace_count = 5;
-    cfg->hotspot_delay  = 50;
+    cfg->hotspot_delay  = 300;
     cfg->mode           = str_dup("static");
     cfg->spread         = 3;
     cfg->icon_spacing   = 2;

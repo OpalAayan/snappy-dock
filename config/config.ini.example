@@ -81,10 +81,11 @@ LauncherHoverBgSize=0
 # Set this to match how many workspaces you normally use.
 WorkspaceCount=5
 
-# Velocity filter for the auto-hide edge hotspot, in milliseconds.
-# Lower means the pointer must hit the screen edge faster.
-# 0 means any edge hover reveals the dock.
-HotspotDelay=50
+# Delay in milliseconds before the dock hides after the cursor leaves.
+# Lower values = dock disappears faster (more like macOS).
+# 0 means hide instantly when the cursor leaves.
+# Default: 300 (ms).
+HotspotDelay=300
 
 # Dock animation mode.
 # static  — fixed-size icons (default).

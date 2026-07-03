@@ -602,10 +602,17 @@ Scope {
 
             /* ── Timers ─────────────────────────────────────────────── */
 
-            /* Delay before hiding after the cursor leaves the dock. */
+            /* Delay before hiding after the cursor leaves the dock.
+               Uses the daemon's HotspotDelay config (ms) if set,
+               otherwise falls back to Theme.hideDelayMs.              */
             Timer {
                 id: hideTimer
-                interval: Theme.hideDelayMs
+                interval: {
+                    var cfgDelay = DaemonBridge.config.hotspot_delay;
+                    return (cfgDelay !== undefined && cfgDelay > 0)
+                           ? cfgDelay
+                           : Theme.hideDelayMs;
+                }
                 onTriggered: screenScope.startHideAnimation()
             }
 

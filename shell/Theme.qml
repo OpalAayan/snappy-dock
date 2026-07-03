@@ -52,6 +52,6 @@ Singleton {
 
     /* ── Animation ───────────────────────────────────────────────── */
     readonly property int animDuration:   150
-    readonly property int hideAnimMs:     250
-    readonly property int hideDelayMs:    800
+    readonly property int hideAnimMs:     180
+    readonly property int hideDelayMs:    300
 }

@@ -71,7 +71,7 @@ static void test_config_defaults(void) {
     ASSERT_STR_EQ(cfg.font_family, "Sans");
     ASSERT_STR_EQ(cfg.font_weight, "Bold");
     ASSERT_INT_EQ(cfg.workspace_count, 5);
-    ASSERT_INT_EQ(cfg.hotspot_delay, 50);
+    ASSERT_INT_EQ(cfg.hotspot_delay, 300);
     ASSERT_STR_EQ(cfg.mode, "static");
     ASSERT_INT_EQ(cfg.spread, 3);
     ASSERT_INT_EQ(cfg.icon_spacing, 2);
