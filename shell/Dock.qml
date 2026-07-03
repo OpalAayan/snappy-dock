@@ -97,10 +97,10 @@ Scope {
             readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth:  isHorizontal
                                                 ? (wantsFullCrossAxis ? modelData.width : dockBaseWidth + (isHorizontal ? snappyMainOverflow : 0))
-                                                : dockBaseWidth + (isVertical ? snappyHeadroom : 0)
+                                                : dockBaseWidth + (isVertical ? snappyHeadroom : 0) + edgePadding
             readonly property real panelHeight: isVertical
                                                 ? (wantsFullCrossAxis ? modelData.height : dockBaseHeight + (isVertical ? snappyMainOverflow : 0))
-                                                : dockBaseHeight + (isHorizontal ? snappyHeadroom : 0)
+                                                : dockBaseHeight + (isHorizontal ? snappyHeadroom : 0) + edgePadding
 
             /* ── AutoHide metrics ────────────────────────────────────── */
 
@@ -112,6 +112,23 @@ Scope {
                Negative, pushing the panel offscreen except edgeStripSize px. */
             readonly property real hiddenEdgeMargin: edgeStripSize
                                                      - (isVertical ? panelWidth : panelHeight)
+
+            /* When autohide is enabled then the margin would normally mean
+               theres a gap between the dock and the edge of the screen but the
+               place it opens the dock is at the edge, meaning if you open the dock
+               then keep the cursor still then its gonna hide. So then you 
+               change the margin to padding then it stops hiding and it only
+               applies to the edge that is automatically hidden and stuff
+               And then add these variables to the places you gotta you know...
+               */
+            readonly property real edgePadding: autohide
+                ? (isTop ? marginTop : isBottom ? marginBottom : isLeft ? marginLeft : isRight ? marginRight : 0)
+                : 0
+
+            readonly property int effectiveMarginTop:    autohide && isTop    ? 0 : marginTop
+            readonly property int effectiveMarginBottom: autohide && isBottom ? 0 : marginBottom
+            readonly property int effectiveMarginLeft:   autohide && isLeft   ? 0 : marginLeft
+            readonly property int effectiveMarginRight:  autohide && isRight  ? 0 : marginRight
 
             /* ── Snappy mode mouse tracking ──────────────────────────── */
             readonly property real pointerUnset: -100000
@@ -278,10 +295,10 @@ Scope {
                    Hyprland passes int32_t margins straight into the
                    geometry calculation, so negative values work natively. */
                 margins {
-                    top:    screenScope.animatedMargin(screenScope.isTop,    screenScope.marginTop)
-                    bottom: screenScope.animatedMargin(screenScope.isBottom, screenScope.marginBottom)
-                    left:   screenScope.animatedMargin(screenScope.isLeft,   screenScope.marginLeft)
-                    right:  screenScope.animatedMargin(screenScope.isRight,  screenScope.marginRight)
+                    top:    screenScope.animatedMargin(screenScope.isTop,    screenScope.effectiveMarginTop)
+                    bottom: screenScope.animatedMargin(screenScope.isBottom, screenScope.effectiveMarginBottom)
+                    left:   screenScope.animatedMargin(screenScope.isLeft,   screenScope.effectiveMarginLeft)
+                    right:  screenScope.animatedMargin(screenScope.isRight,  screenScope.effectiveMarginRight)
                 }
 
                 WlrLayershell.layer: screenScope.layerFromConfig(DaemonBridge.config.layer)
@@ -422,8 +439,8 @@ Scope {
                                             ? parent.verticalCenter : undefined
 
                     width:  screenScope.isHorizontal ? screenScope.dockBaseWidth + screenScope.snappyMainOverflow
-                                                    : screenScope.dockBaseWidth + screenScope.snappyHeadroom
-                    height: screenScope.isHorizontal ? screenScope.dockBaseHeight + screenScope.snappyHeadroom
+                                                    : screenScope.dockBaseWidth + screenScope.snappyHeadroom + screenScope.edgePadding
+                    height: screenScope.isHorizontal ? screenScope.dockBaseHeight + screenScope.snappyHeadroom + screenScope.edgePadding
                                                     : screenScope.dockBaseHeight + screenScope.snappyMainOverflow
 
                     clip: false
@@ -437,9 +454,13 @@ Scope {
 
                         /* Anchor to the screen edge within the container. */
                         anchors.bottom: screenScope.isBottom ? parent.bottom : undefined
+                        anchors.bottomMargin: screenScope.isBottom ? screenScope.edgePadding : 0
                         anchors.top:    screenScope.isTop    ? parent.top    : undefined
+                        anchors.topMargin: screenScope.isTop ? screenScope.edgePadding : 0
                         anchors.left:   screenScope.isLeft   ? parent.left   : undefined
+                        anchors.leftMargin: screenScope.isLeft ? screenScope.edgePadding : 0
                         anchors.right:  screenScope.isRight  ? parent.right  : undefined
+                        anchors.rightMargin: screenScope.isRight ? screenScope.edgePadding : 0
                         /* Center on the main axis */
                         anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
                         anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
@@ -457,13 +478,13 @@ Scope {
                         /* Anchor to the screen edge so icons overflow
                            away from the edge into the headroom space.   */
                         anchors.bottom: screenScope.isBottom ? parent.bottom : undefined
-                        anchors.bottomMargin: screenScope.isBottom ? Theme.dockPadding : 0
+                        anchors.bottomMargin: screenScope.isBottom ? Theme.dockPadding + screenScope.edgePadding : 0
                         anchors.top:    screenScope.isTop    ? parent.top    : undefined
-                        anchors.topMargin: screenScope.isTop ? Theme.dockPadding : 0
+                        anchors.topMargin: screenScope.isTop ? Theme.dockPadding + screenScope.edgePadding : 0
                         anchors.left:   screenScope.isLeft   ? parent.left   : undefined
-                        anchors.leftMargin: screenScope.isLeft ? Theme.dockPadding : 0
+                        anchors.leftMargin: screenScope.isLeft ? Theme.dockPadding + screenScope.edgePadding : 0
                         anchors.right:  screenScope.isRight  ? parent.right  : undefined
-                        anchors.rightMargin: screenScope.isRight ? Theme.dockPadding : 0
+                        anchors.rightMargin: screenScope.isRight ? Theme.dockPadding + screenScope.edgePadding : 0
 
                         anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
                         anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
