@@ -1,6 +1,6 @@
 # Snappy Dock
 
-> This isnt  all good yet so try at your own risk
+> This isn't all good yet so try at your own risk
 
 ## Showcase (**snappy mode**)
 <div align="center">
@@ -180,12 +180,13 @@ Common config keys:
 | --- | --- |
 | `Position` | Dock edge: `bottom`, `top`, `left`, or `right` |
 | `Alignment` | Placement along the edge: `center`, `start`, or `end` |
+| `FullWidth` | Whether to stretch the dock window across the whole screen width |
 | `Mode` | Dock animation mode: `static` or `snappy` (macOS-style magnification) |
 | `[Icons] IconSize` | Icon size in pixels |
 | `[Icons] Theme` | Qt icon theme name, for example `Tela-dracula` |
 | `[Icons] Fallback` | Icon used when a themed app icon is missing |
 | `Layer` | Wayland layer: `background`, `bottom`, `top`, or `overlay` |
-| `ExclusiveZone` | Whether the dock reserves screen space |
+| `ExclusiveZone` | How many pixels are reserved for the dock, or `auto` to detect the dock height |
 | `AutoHide` | Whether the dock hides after the pointer leaves |
 | `HotspotDelay` | Delay (ms) before the dock hides after cursor leaves |
 | `LauncherCmd` | Command run by the launcher button |
@@ -235,11 +236,11 @@ If an app does not launch from a pinned icon, check that the class name matches 
 ## File Layout
 
 ```txt
-daemon/src/              C daemon source
-shell/                   QuickShell/QML frontend
+daemon/src/               C daemon source
+shell/                    QuickShell/QML frontend
 config/config.ini.example Example config file
-snappy-dock.sh           Installed wrapper script
-meson.build              Build and install rules
+snappy-dock.sh            Installed wrapper script
+meson.build               Build and install rules
 ```
 
 ## Troubleshooting
