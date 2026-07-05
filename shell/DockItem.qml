@@ -116,8 +116,13 @@ Item {
         }
     }
 
+    /* Only animate scale when the pointer leaves (icons settle back).
+       During active hover the Gaussian math drives scale directly —
+       the mouse itself provides smooth 60Hz+ updates, so a Behavior
+       animation is redundant and creates overlapping animation overhead. */
     Behavior on snappyScale {
-        NumberAnimation { duration: 85; easing.type: Easing.OutCubic }
+        enabled: !itemRoot.hasDockPointer && !itemRoot.menuVisible
+        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
     }
 
     readonly property real snappyLift: (snappyScale - 1.0) * size * 0.85

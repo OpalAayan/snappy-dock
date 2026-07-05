@@ -164,8 +164,26 @@ Scope {
             }
 
             function clearSnappyPointer() {
+                _pendingX = pointerUnset;
+                _pendingY = pointerUnset;
                 snappyMouseX = pointerUnset;
                 snappyMouseY = pointerUnset;
+                _snappyThrottle.stop();
+            }
+
+            /* Raw mouse coords are buffered here; a 16ms timer flushes them
+               to the actual properties, capping re-evaluation to ~60fps. */
+            property real _pendingX: pointerUnset
+            property real _pendingY: pointerUnset
+
+            Timer {
+                id: _snappyThrottle
+                interval: 16          /* ~60 fps */
+                repeat: false
+                onTriggered: {
+                    screenScope.snappyMouseX = screenScope._pendingX;
+                    screenScope.snappyMouseY = screenScope._pendingY;
+                }
             }
 
             function updateSnappyPointerFromContainer(x, y) {
@@ -184,8 +202,10 @@ Scope {
                     return;
                 }
 
-                snappyMouseX = mapped.x;
-                snappyMouseY = mapped.y;
+                _pendingX = mapped.x;
+                _pendingY = mapped.y;
+                if (!_snappyThrottle.running)
+                    _snappyThrottle.start();
             }
 
             /* ── Utility functions ───────────────────────────────────── */
