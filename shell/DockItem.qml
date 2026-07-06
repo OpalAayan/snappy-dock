@@ -50,11 +50,30 @@ Item {
     readonly property int indicatorGap: 4
     readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
 
-    /* Fixed implicit sizes keep the dock from shifting while icons animate. */
-    readonly property real baseWidth: size + Theme.itemPadding * 2
-                                      + (isVertical ? sideIndicatorWidth + indicatorGap : 0)
-    readonly property real baseHeight: size + Theme.itemPadding * 2
-                                       + (isVertical ? 0 : Theme.dotSize + indicatorGap)
+    /* Fixed implicit sizes keep the dock from shifting while icons animate.
+       Each position computes independently — no shared isVertical ternary. */
+    readonly property real baseWidth: {
+        switch (dockPosition) {
+            case "left":
+            case "right":
+                return size + Theme.itemPadding * 2 + sideIndicatorWidth + indicatorGap;
+            case "top":
+            case "bottom":
+            default:
+                return size + Theme.itemPadding * 2;
+        }
+    }
+    readonly property real baseHeight: {
+        switch (dockPosition) {
+            case "left":
+            case "right":
+                return size + Theme.itemPadding * 2;
+            case "top":
+            case "bottom":
+            default:
+                return size + Theme.itemPadding * 2 + Theme.dotSize + indicatorGap;
+        }
+    }
 
     /* ── Snappy mode input from Dock.qml ─────────────────────────── */
     property real dockMouseX: -100000
@@ -68,10 +87,28 @@ Item {
     readonly property bool snappyMode: DaemonBridge.config.mode === "snappy"
     readonly property bool hasDockPointer: dockMouseX !== dockPointerUnset
                                            && dockMouseY !== dockPointerUnset
-    readonly property real snappyAxisMouse: isVertical ? dockMouseY : dockMouseX
-    readonly property real snappyAxisCenter: isVertical
-                                             ? itemRoot.y + baseHeight / 2.0
-                                             : itemRoot.x + baseWidth / 2.0
+    readonly property real snappyAxisMouse: {
+        switch (dockPosition) {
+            case "left":
+            case "right":
+                return dockMouseY;
+            case "top":
+            case "bottom":
+            default:
+                return dockMouseX;
+        }
+    }
+    readonly property real snappyAxisCenter: {
+        switch (dockPosition) {
+            case "left":
+            case "right":
+                return itemRoot.y + baseHeight / 2.0;
+            case "top":
+            case "bottom":
+            default:
+                return itemRoot.x + baseWidth / 2.0;
+        }
+    }
 
     /* Gaussian bell curve: closest icon peaks, neighbors taper smoothly.
      * sigma derives from spread (how many icon-widths of falloff).
@@ -79,7 +116,16 @@ Item {
      */
     readonly property real snappyMaxScale: 1.0 + Math.max(0.0, Math.min(2.0, magnification))
     readonly property real snappySigma: {
-        var cellSize = isVertical ? baseHeight : baseWidth;
+        var cellSize;
+        switch (dockPosition) {
+            case "left":
+            case "right":
+                cellSize = baseHeight; break;
+            case "top":
+            case "bottom":
+            default:
+                cellSize = baseWidth; break;
+        }
         /* spread=3 means ~3 icon cells of visible influence */
         return Math.max(cellSize * spread * 0.42, 40);
     }
@@ -126,10 +172,22 @@ Item {
     }
 
     readonly property real snappyLift: (snappyScale - 1.0) * size * 0.85
-    readonly property real snappyTranslateX: (!snappyMode || !isVertical) ? 0
-                                           : (isLeft ? snappyLift : -snappyLift)
-    readonly property real snappyTranslateY: (!snappyMode || isVertical) ? 0
-                                           : (isTop ? snappyLift : -snappyLift)
+    readonly property real snappyTranslateX: {
+        if (!snappyMode) return 0;
+        switch (dockPosition) {
+            case "left":  return snappyLift;
+            case "right": return -snappyLift;
+            default:      return 0;
+        }
+    }
+    readonly property real snappyTranslateY: {
+        if (!snappyMode) return 0;
+        switch (dockPosition) {
+            case "top":    return snappyLift;
+            case "bottom": return -snappyLift;
+            default:       return 0;
+        }
+    }
 
     z: snappyMode ? snappyScale : (mouseArea.containsMouse ? 1 : 0)
 
@@ -169,13 +227,15 @@ Item {
 
         readonly property real iconBaseExtent: itemRoot.size + Theme.itemPadding * 2
 
-        anchors.top: (!isVertical && !isTop) ? parent.top : undefined
-        anchors.bottom: (!isVertical && isTop) ? parent.bottom : undefined
-        anchors.horizontalCenter: !isVertical ? parent.horizontalCenter : undefined
-
-        anchors.verticalCenter: isVertical ? parent.verticalCenter : undefined
-        anchors.right: (isVertical && isLeft) ? parent.right : undefined
-        anchors.left: (isVertical && isRight) ? parent.left : undefined
+        /* Position-specific anchoring — each edge is explicit. */
+        anchors.top:    dockPosition === "bottom" ? parent.top    : undefined
+        anchors.bottom: dockPosition === "top"    ? parent.bottom : undefined
+        anchors.left:   dockPosition === "right"  ? parent.left   : undefined
+        anchors.right:  dockPosition === "left"   ? parent.right  : undefined
+        anchors.horizontalCenter: (dockPosition === "top" || dockPosition === "bottom")
+                                  ? parent.horizontalCenter : undefined
+        anchors.verticalCenter:   (dockPosition === "left" || dockPosition === "right")
+                                  ? parent.verticalCenter : undefined
 
         width:  iconBaseExtent
         height: iconBaseExtent
@@ -245,19 +305,27 @@ Item {
     DotIndicator {
         id: dotRow
         position: itemRoot.dockPosition
-        isVertical: itemRoot.isVertical
+        isVertical: itemRoot.dockPosition === "left" || itemRoot.dockPosition === "right"
 
-        anchors.top: (!itemRoot.isVertical && !itemRoot.isTop) ? iconBg.bottom : undefined
-        anchors.topMargin: (!itemRoot.isVertical && !itemRoot.isTop) ? 3 : 0
-        anchors.bottom: (!itemRoot.isVertical && itemRoot.isTop) ? iconBg.top : undefined
-        anchors.bottomMargin: (!itemRoot.isVertical && itemRoot.isTop) ? 3 : 0
-        anchors.horizontalCenter: itemRoot.isVertical ? undefined : parent.horizontalCenter
+        /* Bottom: dots below icon */
+        anchors.top:       itemRoot.dockPosition === "bottom" ? iconBg.bottom : undefined
+        anchors.topMargin: itemRoot.dockPosition === "bottom" ? 3 : 0
+        /* Top: dots above icon */
+        anchors.bottom:       itemRoot.dockPosition === "top" ? iconBg.top : undefined
+        anchors.bottomMargin: itemRoot.dockPosition === "top" ? 3 : 0
+        /* Horizontal center for top/bottom */
+        anchors.horizontalCenter: (itemRoot.dockPosition === "top" || itemRoot.dockPosition === "bottom")
+                                  ? parent.horizontalCenter : undefined
 
-        anchors.verticalCenter: itemRoot.isVertical ? iconBg.verticalCenter : undefined
-        anchors.right: (itemRoot.isVertical && itemRoot.isLeft) ? iconBg.left : undefined
-        anchors.rightMargin: (itemRoot.isVertical && itemRoot.isLeft) ? itemRoot.indicatorGap : 0
-        anchors.left: (itemRoot.isVertical && itemRoot.isRight) ? iconBg.right : undefined
-        anchors.leftMargin: (itemRoot.isVertical && itemRoot.isRight) ? itemRoot.indicatorGap : 0
+        /* Left dock: dots on left (screen edge) of icon */
+        anchors.right:       itemRoot.dockPosition === "left" ? iconBg.left : undefined
+        anchors.rightMargin: itemRoot.dockPosition === "left" ? itemRoot.indicatorGap : 0
+        /* Right dock: dots on right (screen edge) of icon */
+        anchors.left:       itemRoot.dockPosition === "right" ? iconBg.right : undefined
+        anchors.leftMargin: itemRoot.dockPosition === "right" ? itemRoot.indicatorGap : 0
+        /* Vertical center for left/right */
+        anchors.verticalCenter: (itemRoot.dockPosition === "left" || itemRoot.dockPosition === "right")
+                                ? iconBg.verticalCenter : undefined
 
         count: itemRoot.instanceCount
         active: itemRoot.isActive
