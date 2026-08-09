@@ -41,6 +41,7 @@ Singleton {
         launcher_icon_size: 0,
         launcher_hover_bg: true,
         launcher_hover_bg_size: 0,
+        icon_hover_bg: true,
         font_family: "Sans",
         font_weight: "Bold",
         workspace_count: 5,
@@ -52,7 +53,8 @@ Singleton {
         mode: "static",
         spread: 3,
         icon_spacing: 2,
-        magnification: 0.78
+        magnification: 0.78,
+        rise_spacing: 0.5
     })
 
     /* ── Computed display list ───────────────────────────────────── */

@@ -91,6 +91,7 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->launcher_icon_size = 0;
     cfg->launcher_hover_bg = true;
     cfg->launcher_hover_bg_size = 0;
+    cfg->icon_hover_bg = true;
     cfg->font_family = str_dup("Sans");
     cfg->font_weight = str_dup("Bold");
     cfg->workspace_count = 5;
@@ -99,6 +100,7 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->spread         = 3;
     cfg->icon_spacing   = 2;
     cfg->magnification  = 0.78;
+    cfg->rise_spacing    = 0.5;
 }
 
 /* ── INI parser ──────────────────────────────────────────────────────── */
@@ -144,6 +146,8 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
             cfg->launcher_hover_bg = parse_bool(val);
         } else if (str_eq_ci(key, "LauncherHoverBgSize")) {
             cfg->launcher_hover_bg_size = atoi(val);
+        } else if (str_eq_ci(key, "IconHoverBg")) {
+            cfg->icon_hover_bg = parse_bool(val);
         } else if (str_eq_ci(key, "WorkspaceCount")) {
             cfg->workspace_count = atoi(val);
         } else if (str_eq_ci(key, "HotspotDelay")) {
@@ -162,6 +166,10 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
             cfg->magnification = parse_double(val, 0.78);
             if (cfg->magnification < 0.0) cfg->magnification = 0.0;
             if (cfg->magnification > 2.0) cfg->magnification = 2.0;
+        } else if (str_eq_ci(key, "RiseSpacing")) {
+            cfg->rise_spacing = parse_double(val, 0.5);
+            if (cfg->rise_spacing < 0.0) cfg->rise_spacing = 0.0;
+            if (cfg->rise_spacing > 2.0) cfg->rise_spacing = 2.0;
         }
     } else if (str_eq_ci(section, "Margins")) {
         if (str_eq_ci(key, "Top"))         cfg->margin_top    = atoi(val);

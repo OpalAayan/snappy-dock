@@ -182,9 +182,11 @@ Common config keys:
 | `Alignment` | Placement along the edge: `center`, `start`, or `end` |
 | `FullWidth` | Whether to stretch the dock window across the whole screen width |
 | `Mode` | Dock animation mode: `static` or `snappy` (macOS-style magnification) |
+| `RiseSpacing` | How much magnified icons push neighbors apart in snappy mode (0.0 to 2.0) |
 | `[Icons] IconSize` | Icon size in pixels |
 | `[Icons] Theme` | Qt icon theme name, for example `Tela-dracula` |
 | `[Icons] Fallback` | Icon used when a themed app icon is missing |
+| `IconHoverBg` | Show hover background for dock icons (`true`/`false`) |
 | `Layer` | Wayland layer: `background`, `bottom`, `top`, or `overlay` |
 | `ExclusiveZone` | How many pixels are reserved for the dock, or `auto` to detect the dock height |
 | `AutoHide` | Whether the dock hides after the pointer leaves |

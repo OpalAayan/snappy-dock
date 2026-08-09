@@ -40,6 +40,7 @@ typedef struct {
     int   launcher_icon_size;
     bool  launcher_hover_bg;
     int   launcher_hover_bg_size;
+    bool  icon_hover_bg;        /* show hover background on dock icons      */
     char *font_family;
     char *font_weight;
     int   workspace_count;  /* right-click "Send to WS" submenu count    */
@@ -50,6 +51,7 @@ typedef struct {
     int    spread;          /* neighbor influence radius (icon-widths) 1–6 */
     int    icon_spacing;    /* gap between dock items (px), default 2      */
     double magnification;   /* extra scale on hover (0.0–2.0), default 0.78*/
+    double rise_spacing;    /* main-axis push factor, snappy only (0.0–2.0)*/
 } DockConfig;
 
 /* ── API ─────────────────────────────────────────────────────────────── */

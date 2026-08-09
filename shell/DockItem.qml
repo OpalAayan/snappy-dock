@@ -84,6 +84,10 @@ Item {
     property real magnification: 0.78
     property int  spread: 3
 
+    /* Cumulative displacement from Dock.qml — pushes icons apart
+       along the main axis when magnified (snappy mode only). */
+    property real snappyMainDisplacement: 0
+
     readonly property bool snappyMode: DaemonBridge.config.mode === "snappy"
     readonly property bool hasDockPointer: dockMouseX !== dockPointerUnset
                                            && dockMouseY !== dockPointerUnset
@@ -171,6 +175,11 @@ Item {
         NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
     }
 
+    Behavior on snappyMainDisplacement {
+        enabled: !itemRoot.hasDockPointer && !itemRoot.menuVisible
+        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+    }
+
     readonly property real snappyLift: (snappyScale - 1.0) * size * 0.85
     readonly property real snappyTranslateX: {
         if (!snappyMode) return 0;
@@ -202,6 +211,14 @@ Item {
 
     implicitWidth:  baseWidth
     implicitHeight: baseHeight
+
+    /* Main-axis displacement: shifts the entire DockItem (icon + dots)
+       so magnified icons push neighbors apart without Grid reflow.
+       Cross-axis lift stays on iconBg so dots remain at the edge. */
+    transform: Translate {
+        x: itemRoot.isVertical ? 0 : itemRoot.snappyMainDisplacement
+        y: itemRoot.isVertical ? itemRoot.snappyMainDisplacement : 0
+    }
 
     property bool showTooltip: false
 
@@ -240,7 +257,7 @@ Item {
         width:  iconBaseExtent
         height: iconBaseExtent
         radius: Math.round(iconBaseExtent * 0.22)
-        color:  mouseArea.containsMouse
+        color:  (DaemonBridge.config.icon_hover_bg !== false && mouseArea.containsMouse)
                     ? (itemRoot.isActive ? Theme.itemActive : Theme.itemHover)
                     : "transparent"
 

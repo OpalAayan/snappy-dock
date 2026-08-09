@@ -77,6 +77,11 @@ LauncherHoverBg=true
 # 0 means scale automatically based on IconSize and padding.
 LauncherHoverBgSize=0
 
+# Show a hover background for dock icons.
+# When true, hovering over a dock icon shows a subtle background highlight.
+# Set to false to disable the hover background effect on dock icons.
+IconHoverBg=true
+
 # Number of workspaces shown in the right-click "Move to workspace" menu.
 # Set this to match how many workspaces you normally use.
 WorkspaceCount=5
@@ -111,6 +116,13 @@ Spread=3
 # Applies to both static and snappy modes.
 # 0 means icons touch with no gap.
 IconSpacing=2
+
+# How much magnified icons push neighbors apart in snappy mode.
+# 0 means no separation (icons can overlap as they grow).
+# 0.5 (default) gives moderate breathing room.
+# 1.0 fully preserves the original gap between scaled icons (macOS feel).
+# Has no effect in static mode.
+RiseSpacing=0.5
 
 [Icons]
 

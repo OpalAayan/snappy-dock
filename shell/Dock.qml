@@ -117,12 +117,83 @@ Scope {
                           + (_snappyMaxScale - 1.0) * Theme.iconSize * 0.85
                           + 8)
                 : 0
+
+            /* ── Snappy rise displacement ────────────────────────── */
+            /* RiseSpacing scales how much magnified icons push
+               neighbors apart on the main axis (0=off, 1=full).    */
+            readonly property real _snappyRiseSpacing: {
+                if (!snappyMode) return 0;
+                var rs = DaemonBridge.config.rise_spacing;
+                return (rs !== undefined && rs !== null) ? Math.max(0, Math.min(2, rs)) : 0.5;
+            }
+            /* Static worst-case rise growth for panel/container sizing
+               (computed as if cursor is at the center of the dock).   */
+            readonly property real _snappyMaxRiseGrowth: {
+                if (_snappyRiseSpacing <= 0) return 0;
+                var n = DaemonBridge.dockItems.length;
+                if (n === 0) return 0;
+                var cell = _snappyExtent, sp = Theme.itemSpacing;
+                var peak = _snappyMaxScale;
+                var sig = Math.max(cell * (DaemonBridge.config.spread || 3) * 0.42, 40);
+                var ir = sig * 2.8;
+                var mid = (n * (cell + sp) - sp) * 0.5;
+                var total = 0;
+                for (var i = 0; i < n; i++) {
+                    var d = Math.abs(i * (cell + sp) + cell * 0.5 - mid);
+                    if (d < ir) total += (peak - 1.0) * Math.exp(-(d * d) / (2.0 * sig * sig)) * cell;
+                }
+                return total * _snappyRiseSpacing;
+            }
+
             /* Main-axis overflow: edge icons grow wider/taller when magnified
                and get clipped at the panel surface boundary.  Add symmetric
-               padding so they have room.  (cross-axis uses snappyHeadroom.) */
+               padding so they have room.  _snappyMaxRiseGrowth/2 accounts
+               for the outermost icon being displaced outward.              */
             readonly property real snappyMainOverflow: snappyMode
-                ? Math.ceil((_snappyMaxScale - 1.0) * _snappyExtent * 0.5 + 8) * 2
+                ? Math.ceil((_snappyMaxScale - 1.0) * _snappyExtent * 0.5 + 8 + _snappyMaxRiseGrowth * 0.5) * 2
                 : 0
+
+            /* Per-frame displacement: recomputed at ~60fps when pointer is
+               on the dock.  Each icon's displacement equals where its center
+               WOULD be if all icons occupied their scaled sizes, minus where
+               it actually is in the fixed Grid — centered so the dock
+               expands symmetrically.                                        */
+            property var _snappyDisplacementData: {
+                var empty = { displacements: [], totalGrowth: 0 };
+                if (_snappyRiseSpacing <= 0) return empty;
+                var n = DaemonBridge.dockItems.length;
+                if (n === 0) return empty;
+                var mouseAxis = isVertical ? snappyMouseY : snappyMouseX;
+                if (mouseAxis === pointerUnset) return empty;
+                var cell = _snappyExtent, sp = Theme.itemSpacing;
+                var peak = _snappyMaxScale;
+                var sig = Math.max(cell * (DaemonBridge.config.spread || 3) * 0.42, 40);
+                var ir = sig * 2.8;
+                var rs = _snappyRiseSpacing;
+                /* Compute Gaussian scales (mirrors DockItem.gaussianScale) */
+                var scales = new Array(n);
+                for (var i = 0; i < n; i++) {
+                    var d = Math.abs(i * (cell + sp) + cell * 0.5 - mouseAxis);
+                    scales[i] = (d >= ir) ? 1.0
+                        : 1.0 + (peak - 1.0) * Math.exp(-(d * d) / (2.0 * sig * sig));
+                }
+                /* Layout as if each icon occupied its scaled size */
+                var pos = 0, nc = new Array(n);
+                for (var j = 0; j < n; j++) {
+                    var ew = scales[j] * cell;
+                    nc[j] = pos + ew * 0.5;
+                    pos += ew + sp;
+                }
+                var totalOrig = n * cell + (n - 1) * sp;
+                var growth = (pos - sp - totalOrig) * rs;
+                var shift = (pos - sp - totalOrig) * 0.5;
+                var disps = new Array(n);
+                for (var k = 0; k < n; k++)
+                    disps[k] = (nc[k] - (k * (cell + sp) + cell * 0.5) - shift) * rs;
+                return { displacements: disps, totalGrowth: growth };
+            }
+            readonly property var snappyDisplacements: _snappyDisplacementData.displacements || []
+            readonly property real snappyRiseGrowth: _snappyDisplacementData.totalGrowth || 0
             readonly property real dockBaseWidth:   mainLayout.implicitWidth  + Theme.dockPadding * 2
             readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth: {
@@ -626,8 +697,21 @@ Scope {
                     Rectangle {
                         id: dockBackground
 
-                        width:  screenScope.dockBaseWidth
-                        height: screenScope.dockBaseHeight
+                        /* Rise-growth properties — kept separate from width/height
+                           so their Behaviors don't interfere with item-add resizes. */
+                        property real _riseW: screenScope.isHorizontal ? screenScope.snappyRiseGrowth : 0
+                        property real _riseH: screenScope.isVertical   ? screenScope.snappyRiseGrowth : 0
+                        Behavior on _riseW {
+                            enabled: screenScope.snappyMode && screenScope.snappyMouseX === screenScope.pointerUnset
+                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                        }
+                        Behavior on _riseH {
+                            enabled: screenScope.snappyMode && screenScope.snappyMouseX === screenScope.pointerUnset
+                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                        }
+
+                        width:  screenScope.dockBaseWidth  + _riseW
+                        height: screenScope.dockBaseHeight + _riseH
 
                         /* Anchor to the screen edge within the container. */
                         anchors.bottom:       screenScope.dockPosition === "bottom" ? parent.bottom : undefined
@@ -745,6 +829,10 @@ Scope {
                                     dockPointerUnset: screenScope.pointerUnset
                                     magnification: DaemonBridge.config.magnification || 0.78
                                     spread:        DaemonBridge.config.spread || 3
+                                    snappyMainDisplacement: {
+                                        var d = screenScope.snappyDisplacements;
+                                        return (d && index >= 0 && index < d.length) ? d[index] : 0;
+                                    }
                                 }
                             }
                         }

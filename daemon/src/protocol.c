@@ -64,6 +64,8 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_boolean(cfg->launcher_hover_bg));
     json_object_object_add(obj, "launcher_hover_bg_size",
         json_object_new_int(cfg->launcher_hover_bg_size));
+    json_object_object_add(obj, "icon_hover_bg",
+        json_object_new_boolean(cfg->icon_hover_bg));
     json_object_object_add(obj, "font_family",
         json_object_new_string(cfg->font_family ? cfg->font_family : "FiraCode Nerd Font"));
     json_object_object_add(obj, "font_weight",
@@ -88,6 +90,8 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_int(cfg->icon_spacing));
     json_object_object_add(obj, "magnification",
         json_object_new_double(cfg->magnification));
+    json_object_object_add(obj, "rise_spacing",
+        json_object_new_double(cfg->rise_spacing));
 
     const char *str = json_object_to_json_string_ext(obj,
         JSON_C_TO_STRING_PLAIN);

@@ -68,6 +68,7 @@ static void test_config_defaults(void) {
     ASSERT_INT_EQ(cfg.launcher_icon_size, 0);
     ASSERT_INT_EQ(cfg.launcher_hover_bg, true);
     ASSERT_INT_EQ(cfg.launcher_hover_bg_size, 0);
+    ASSERT_INT_EQ(cfg.icon_hover_bg, true);
     ASSERT_STR_EQ(cfg.font_family, "Sans");
     ASSERT_STR_EQ(cfg.font_weight, "Bold");
     ASSERT_INT_EQ(cfg.workspace_count, 5);
@@ -76,6 +77,7 @@ static void test_config_defaults(void) {
     ASSERT_INT_EQ(cfg.spread, 3);
     ASSERT_INT_EQ(cfg.icon_spacing, 2);
     ASSERT_TRUE(cfg.magnification > 0.77 && cfg.magnification < 0.79);
+    ASSERT_TRUE(cfg.rise_spacing > 0.49 && cfg.rise_spacing < 0.51);
 
     config_free_fields(&cfg);
 }
