@@ -32,6 +32,10 @@ Item {
     required property bool   isPinned
     required property var    instances
 
+    property bool isLauncher: false
+    readonly property string launcherIconStr: DaemonBridge.config.launcher_icon || "dots"
+    readonly property bool useDots: launcherIconStr === "" || launcherIconStr === "0" || launcherIconStr === "none" || launcherIconStr === "auto" || launcherIconStr === "dots"
+
     property int size: Theme.iconSize
     property string screenName: ""
     property string itemId: itemRoot.screenName + "_" + itemRoot.className + "_" + itemRoot.title
@@ -257,9 +261,11 @@ Item {
         width:  iconBaseExtent
         height: iconBaseExtent
         radius: Math.round(iconBaseExtent * 0.22)
-        color:  (DaemonBridge.config.icon_hover_bg !== false && mouseArea.containsMouse)
+        color:  itemRoot.isLauncher
+                ? ((DaemonBridge.config.launcher_hover_bg !== false && mouseArea.containsMouse) ? Theme.itemHover : "transparent")
+                : ((DaemonBridge.config.icon_hover_bg !== false && mouseArea.containsMouse)
                     ? (itemRoot.isActive ? Theme.itemActive : Theme.itemHover)
-                    : "transparent"
+                    : "transparent")
 
         Behavior on color {
             ColorAnimation { duration: 120 }
@@ -278,18 +284,54 @@ Item {
             y: itemRoot.snappyTranslateY
         }
 
-        /* Icon image via Qt icon engine */
+        /* Icon image via Qt icon engine (regular apps) */
         Image {
             id: iconImage
+            visible: !itemRoot.isLauncher
             anchors.centerIn: parent
             width:  itemRoot.size
             height: itemRoot.size
             sourceSize: Qt.size(Math.ceil(itemRoot.size * itemRoot.snappyMaxScale),
                                 Math.ceil(itemRoot.size * itemRoot.snappyMaxScale))
-            source: itemRoot.iconSource()
+            source: itemRoot.isLauncher ? "" : itemRoot.iconSource()
             smooth: true
             mipmap: true
             asynchronous: true
+        }
+
+        /* 9-dot grid for default launcher */
+        Grid {
+            id: dotsGrid
+            anchors.centerIn: parent
+            columns: 3
+            spacing: Math.max(1, Math.round(itemRoot.size / 8))
+            visible: itemRoot.isLauncher && itemRoot.useDots
+
+            Repeater {
+                model: 9
+                Rectangle {
+                    readonly property real dSize: Math.max(2, Math.round(itemRoot.size / 5))
+                    width: dSize
+                    height: dSize
+                    radius: dSize / 2
+                    color: mouseArea.containsMouse ? Theme.accentColor : Theme.textColor
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                }
+            }
+        }
+
+        /* Text or Nerd Font symbol for custom launcher icon */
+        Text {
+            anchors.centerIn: parent
+            visible: itemRoot.isLauncher && !itemRoot.useDots
+            text: itemRoot.launcherIconStr
+            font.family: Theme.fontFamily
+            font.weight: Theme.fontWeight
+            font.pixelSize: (DaemonBridge.config.launcher_icon_size > 0)
+                            ? DaemonBridge.config.launcher_icon_size
+                            : (itemRoot.size + 2)
+            color: mouseArea.containsMouse ? Theme.accentColor : Theme.textColor
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
 
         /* Mouse handling */
@@ -300,6 +342,10 @@ Item {
             acceptedButtons: Qt.LeftButton | Qt.RightButton
 
             onClicked: function(mouse) {
+                if (itemRoot.isLauncher) {
+                    DaemonBridge.launchCmd(DaemonBridge.config.launcher_cmd || "fuzzel");
+                    return;
+                }
                 if (mouse.button === Qt.RightButton) {
                     if (DaemonBridge.activeMenuId === itemRoot.itemId) {
                         DaemonBridge.activeMenuId = "";
@@ -321,6 +367,7 @@ Item {
     /* ── Dot indicators ──────────────────────────────────────────── */
     DotIndicator {
         id: dotRow
+        visible: !itemRoot.isLauncher
         position: itemRoot.dockPosition
         isVertical: itemRoot.dockPosition === "left" || itemRoot.dockPosition === "right"
 
@@ -344,7 +391,7 @@ Item {
         anchors.verticalCenter: (itemRoot.dockPosition === "left" || itemRoot.dockPosition === "right")
                                 ? iconBg.verticalCenter : undefined
 
-        count: itemRoot.instanceCount
+        count: itemRoot.isLauncher ? 0 : itemRoot.instanceCount
         active: itemRoot.isActive
     }
 
@@ -383,7 +430,7 @@ Item {
             Text {
                 id: tipText
                 anchors.centerIn: parent
-                text: itemRoot.title || itemRoot.className
+                text: itemRoot.isLauncher ? "Applications" : (itemRoot.title || itemRoot.className)
                 color: Theme.textColor
                 font.pixelSize: 12
                 font.family: Theme.fontFamily
@@ -394,7 +441,7 @@ Item {
     /* ── Context Menu via PopupWindow ───────────────────────────── */
     PopupWindow {
         id: calendarPopup
-        visible: itemRoot.menuVisible
+        visible: !itemRoot.isLauncher && itemRoot.menuVisible
         grabFocus: true
         anchor.item: iconBg
         anchor.edges: {

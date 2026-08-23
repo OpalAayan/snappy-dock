@@ -46,14 +46,32 @@ Scope {
 
             /* ── Feature flags ───────────────────────────────────────── */
             readonly property bool autohide:      Boolean(DaemonBridge.config.autohide)
-            readonly property bool showLauncher:   normalizedLauncherPos(DaemonBridge.config.launcher_pos) !== "none"
-            readonly property bool launcherAtEnd:  normalizedLauncherPos(DaemonBridge.config.launcher_pos) === "end"
             readonly property bool snappyMode:     DaemonBridge.config.mode === "snappy"
 
+            /* ── Unified display list (includes launcher as a native dock item) ── */
+            readonly property var displayItems: {
+                var raw = DaemonBridge.dockItems || [];
+                var pos = normalizedLauncherPos(DaemonBridge.config.launcher_pos);
+                if (pos === "none")
+                    return raw;
+                var launcherObj = {
+                    className: "_launcher",
+                    icon: DaemonBridge.config.launcher_icon || "dots",
+                    addr: "",
+                    title: "Applications",
+                    instanceCount: 0,
+                    isActive: false,
+                    isPinned: false,
+                    instances: [],
+                    isLauncher: true
+                };
+                if (pos === "end")
+                    return raw.concat([launcherObj]);
+                return [launcherObj].concat(raw);
+            }
+
             /* ── Layout metrics ──────────────────────────────────────── */
-            readonly property int visibleItemCount: DaemonBridge.dockItems.length
-                                                    + (showLauncher ? 1 : 0)
-                                                    + (showLauncher && DaemonBridge.dockItems.length > 0 ? 1 : 0)
+            readonly property int visibleItemCount: displayItems.length
             readonly property int itemExtent:    Theme.iconSize + Theme.itemPadding * 2
             readonly property int indicatorGap: 4
             readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
@@ -130,7 +148,7 @@ Scope {
                (computed as if cursor is at the center of the dock).   */
             readonly property real _snappyMaxRiseGrowth: {
                 if (_snappyRiseSpacing <= 0) return 0;
-                var n = DaemonBridge.dockItems.length;
+                var n = displayItems.length;
                 if (n === 0) return 0;
                 var cell = _snappyExtent, sp = Theme.itemSpacing;
                 var peak = _snappyMaxScale;
@@ -161,7 +179,7 @@ Scope {
             property var _snappyDisplacementData: {
                 var empty = { displacements: [], totalGrowth: 0 };
                 if (_snappyRiseSpacing <= 0) return empty;
-                var n = DaemonBridge.dockItems.length;
+                var n = displayItems.length;
                 if (n === 0) return empty;
                 var mouseAxis = isVertical ? snappyMouseY : snappyMouseX;
                 if (mouseAxis === pointerUnset) return empty;
@@ -194,8 +212,8 @@ Scope {
             }
             readonly property var snappyDisplacements: _snappyDisplacementData.displacements || []
             readonly property real snappyRiseGrowth: _snappyDisplacementData.totalGrowth || 0
-            readonly property real dockBaseWidth:   mainLayout.implicitWidth  + Theme.dockPadding * 2
-            readonly property real dockBaseHeight:  mainLayout.implicitHeight + Theme.dockPadding * 2
+            readonly property real dockBaseWidth:   dockLayout.implicitWidth  + Theme.dockPadding * 2
+            readonly property real dockBaseHeight:  dockLayout.implicitHeight + Theme.dockPadding * 2
             readonly property real panelWidth: {
                 switch (dockPosition) {
                     case "left":
@@ -510,138 +528,6 @@ Scope {
                     item: inputSurface
                 }
 
-                /* ── Inline component: launcher button ───────────────── */
-                Component {
-                    id: launcherButtonComponent
-
-                    Item {
-                        id: launcherItem
-                        width: screenScope.dockItemWidth
-                        height: screenScope.dockItemHeight
-
-                        readonly property string customIconStr: DaemonBridge.config.launcher_icon || "dots"
-                        readonly property bool useDots: customIconStr === "" || customIconStr === "0" || customIconStr === "none" || customIconStr === "auto" || customIconStr === "dots"
-                        
-                        readonly property int hoverSizeParam: DaemonBridge.config.launcher_hover_bg_size || 0
-                        readonly property int hoverBgSize: hoverSizeParam > 0 ? hoverSizeParam : screenScope.itemExtent
-                        readonly property bool showHoverBg: DaemonBridge.config.launcher_hover_bg !== false
-
-                        Rectangle {
-                            id: launcherBg
-                            anchors.centerIn: parent
-                            width:  launcherItem.hoverBgSize
-                            height: launcherItem.hoverBgSize
-                            color:  (launcherItem.showHoverBg && launcherMouse.containsMouse) ? Theme.itemHover : "transparent"
-                            radius: Math.min(width / 2, Math.max(4, Math.round(width * 0.25)))
-
-                            readonly property real customSize: DaemonBridge.config.launcher_icon_size || 0
-                            readonly property real baseSize: customSize > 0 ? customSize : Theme.iconSize + 2
-                            readonly property real targetGridSize: baseSize
-                            readonly property real dotSize: Math.max(2, Math.round(targetGridSize / 5))
-                            readonly property real dotSpacing: Math.max(1, Math.round(targetGridSize / 8))
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            scale: launcherMouse.containsMouse ? 1.08 : 1.0
-                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                            Grid {
-                                anchors.centerIn: parent
-                                columns: 3
-                                spacing: launcherBg.dotSpacing
-                                visible: launcherItem.useDots
-
-                                Repeater {
-                                    model: 9
-                                    Rectangle {
-                                        width: launcherBg.dotSize; height: launcherBg.dotSize; radius: launcherBg.dotSize / 2
-                                        color: launcherMouse.containsMouse
-                                               ? Theme.accentColor : Theme.textColor
-                                        Behavior on color { ColorAnimation { duration: 120 } }
-                                    }
-                                }
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                visible: !launcherItem.useDots
-                                text: launcherItem.customIconStr
-                                font.family: Theme.fontFamily
-                                font.weight: Theme.fontWeight
-                                font.pixelSize: launcherBg.baseSize
-                                color: launcherMouse.containsMouse ? Theme.accentColor : Theme.textColor
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                            }
-
-                            MouseArea {
-                                id: launcherMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: {
-                                    DaemonBridge.launchCmd(DaemonBridge.config.launcher_cmd || "fuzzel");
-                                }
-                            }
-                        }
-                    }
-                }
-
-                /* ── Inline component: separator ─────────────────────── */
-                Component {
-                    id: separatorComponent
-
-                    Item {
-                        width: {
-                            switch (screenScope.dockPosition) {
-                                case "left":
-                                case "right":
-                                    return screenScope.dockItemWidth;
-                                case "top":
-                                case "bottom":
-                                default:
-                                    return 12;
-                            }
-                        }
-                        height: {
-                            switch (screenScope.dockPosition) {
-                                case "left":
-                                case "right":
-                                    return 12;
-                                case "top":
-                                case "bottom":
-                                default:
-                                    return screenScope.dockItemHeight;
-                            }
-                        }
-
-                        Rectangle {
-                            width: {
-                                switch (screenScope.dockPosition) {
-                                    case "left":
-                                    case "right":
-                                        return screenScope.itemExtent * 0.4;
-                                    case "top":
-                                    case "bottom":
-                                    default:
-                                        return 2;
-                                }
-                            }
-                            height: {
-                                switch (screenScope.dockPosition) {
-                                    case "left":
-                                    case "right":
-                                        return 2;
-                                    case "top":
-                                    case "bottom":
-                                    default:
-                                        return screenScope.itemExtent * 0.4;
-                                }
-                            }
-                            anchors.centerIn: parent
-                            color: Theme.bgBorder
-                            radius: 1
-                        }
-                    }
-                }
-
                 /* ── Dock container (input region, full panel size) ──── */
                 /* dockContainer is the full panel size so hover/click
                    detection works in the magnification overflow zone.
@@ -735,7 +621,7 @@ Scope {
                     }
 
                     Grid {
-                        id: mainLayout
+                        id: dockLayout
                         clip: false
 
                         /* Anchor to the screen edge so icons overflow
@@ -754,101 +640,47 @@ Scope {
                         anchors.verticalCenter:   (screenScope.dockPosition === "left" || screenScope.dockPosition === "right")
                                                   ? parent.verticalCenter   : undefined
 
-                        columns: {
-                            switch (screenScope.dockPosition) {
-                                case "left":
-                                case "right":
-                                    return 1;
-                                case "top":
-                                case "bottom":
-                                default:
-                                    return 5;
-                            }
-                        }
+                        columns: screenScope.isVertical ? 1 : Math.max(1, screenScope.displayItems.length)
                         spacing: Theme.itemSpacing
 
-                        Loader {
-                            active: screenScope.showLauncher && !screenScope.launcherAtEnd
-                            visible: active
-                            sourceComponent: launcherButtonComponent
+                        add: Transition {
+                            ParallelAnimation {
+                                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 250; easing.type: Easing.OutCubic }
+                                NumberAnimation { property: "scale"; from: 0.5; to: 1.0; duration: 250; easing.type: Easing.OutBack }
+                            }
+                        }
+                        move: Transition {
+                            NumberAnimation { properties: "x,y"; duration: 250; easing.type: Easing.OutCubic }
                         }
 
-                        Loader {
-                            active: screenScope.showLauncher
-                                    && !screenScope.launcherAtEnd
-                                    && DaemonBridge.dockItems.length > 0
-                            visible: active
-                            sourceComponent: separatorComponent
-                        }
+                        Repeater {
+                            model: screenScope.displayItems.length
 
-                        Grid {
-                            id: dockLayout
-                            clip: false
-                            columns: {
-                                switch (screenScope.dockPosition) {
-                                    case "left":
-                                    case "right":
-                                        return 1;
-                                    case "top":
-                                    case "bottom":
-                                    default:
-                                        return Math.max(1, DaemonBridge.dockItems.length);
+                            DockItem {
+                                required property int index
+                                readonly property var modelData: screenScope.displayItems[index] || ({})
+
+                                isLauncher:    Boolean(modelData.isLauncher)
+                                className:     modelData.className     || ""
+                                icon:          modelData.icon          || ""
+                                addr:          modelData.addr          || ""
+                                title:         modelData.title         || ""
+                                instanceCount: modelData.instanceCount || 0
+                                isActive:      modelData.isActive      || false
+                                isPinned:      modelData.isPinned      || false
+                                instances:     modelData.instances     || []
+                                size:          Theme.iconSize
+                                screenName:    screenScope.modelData.name || ""
+                                dockMouseX:    screenScope.snappyMouseX
+                                dockMouseY:    screenScope.snappyMouseY
+                                dockPointerUnset: screenScope.pointerUnset
+                                magnification: DaemonBridge.config.magnification || 0.78
+                                spread:        DaemonBridge.config.spread || 3
+                                snappyMainDisplacement: {
+                                    var d = screenScope.snappyDisplacements;
+                                    return (d && index >= 0 && index < d.length) ? d[index] : 0;
                                 }
                             }
-                            spacing: Theme.itemSpacing
-
-                            add: Transition {
-                                ParallelAnimation {
-                                    NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: 250; easing.type: Easing.OutCubic }
-                                    NumberAnimation { property: "scale"; from: 0.5; to: 1.0; duration: 250; easing.type: Easing.OutBack }
-                                }
-                            }
-                            move: Transition {
-                                NumberAnimation { properties: "x,y"; duration: 250; easing.type: Easing.OutCubic }
-                            }
-
-                            Repeater {
-                                model: DaemonBridge.dockItems.length
-
-                                DockItem {
-                                    required property int index
-                                    readonly property var modelData: DaemonBridge.dockItems[index] || ({})
-
-                                    className:     modelData.className     || ""
-                                    icon:          modelData.icon          || ""
-                                    addr:          modelData.addr          || ""
-                                    title:         modelData.title         || ""
-                                    instanceCount: modelData.instanceCount || 0
-                                    isActive:      modelData.isActive      || false
-                                    isPinned:      modelData.isPinned      || false
-                                    instances:     modelData.instances     || []
-                                    size:          Theme.iconSize
-                                    screenName:    screenScope.modelData.name || ""
-                                    dockMouseX:    screenScope.snappyMouseX
-                                    dockMouseY:    screenScope.snappyMouseY
-                                    dockPointerUnset: screenScope.pointerUnset
-                                    magnification: DaemonBridge.config.magnification || 0.78
-                                    spread:        DaemonBridge.config.spread || 3
-                                    snappyMainDisplacement: {
-                                        var d = screenScope.snappyDisplacements;
-                                        return (d && index >= 0 && index < d.length) ? d[index] : 0;
-                                    }
-                                }
-                            }
-                        }
-
-                        Loader {
-                            active: screenScope.showLauncher
-                                    && screenScope.launcherAtEnd
-                                    && DaemonBridge.dockItems.length > 0
-                            visible: active
-                            sourceComponent: separatorComponent
-                        }
-
-                        Loader {
-                            active: screenScope.showLauncher && screenScope.launcherAtEnd
-                            visible: active
-                            sourceComponent: launcherButtonComponent
                         }
                     }
 
@@ -872,13 +704,6 @@ Scope {
                     }
 
                     /* ── Autohide hover detection ───────────────────────── */
-                    /* This HoverHandler is on dockContainer (which fills
-                       the full panel on the primary axis) so QML's parent-
-                       child hover propagation works even when dock items
-                       have their own MouseAreas.  The Wayland input region
-                       is set via inputSurface (mask) to cover the full
-                       panel — the compositor clips it to the visible edge
-                       strip when the dock is hidden. */
                     HoverHandler {
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                         onHoveredChanged: {

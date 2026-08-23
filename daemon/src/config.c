@@ -237,40 +237,15 @@ static void config_load_ini(DockConfig *cfg, const char *path)
     fclose(f);
 }
 
-/* ── CLI argument parser ─────────────────────────────────────────────── */
+/* ── CLI argument parser (reserved for future use) ───────────────────── */
 
 static void config_parse_cli(DockConfig *cfg, int *argc, char ***argv)
 {
-    int out = 1; /* write index for surviving args */
-
-    for (int i = 1; i < *argc; i++) {
-        char *arg = (*argv)[i];
-        char *next = (i + 1 < *argc) ? (*argv)[i + 1] : NULL;
-
-        if (strcmp(arg, "-p") == 0 && next) {
-            free(cfg->position);
-            cfg->position = str_dup(next);
-            i++;
-        } else if (strcmp(arg, "-i") == 0 && next) {
-            cfg->icon_size = atoi(next);
-            i++;
-        } else if (strcmp(arg, "-d") == 0) {
-            cfg->autohide = true;
-        } else if (strcmp(arg, "-l") == 0 && next) {
-            free(cfg->layer);
-            cfg->layer = str_dup(next);
-            i++;
-        } else if (strcmp(arg, "-c") == 0 && next) {
-            free(cfg->launcher_cmd);
-            cfg->launcher_cmd = str_dup(next);
-            i++;
-        } else {
-            /* Keep unrecognised args */
-            (*argv)[out++] = arg;
-        }
-    }
-
-    *argc = out;
+    (void)cfg;
+    (void)argc;
+    (void)argv;
+    /* All configuration is handled via config.ini.
+     * This function is retained for potential future CLI flags. */
 }
 
 /* ── Validation ──────────────────────────────────────────────────────── */

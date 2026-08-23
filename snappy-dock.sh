@@ -198,21 +198,11 @@ ENVIRONMENT:
     SNAPPY_DOCK_SHELL        Override shell directory path
 
 CONFIG:
-	    $(config_dir)/config.ini     Dock settings (INI format)
+    $(config_dir)/config.ini     Dock settings (INI format)
     $(config_dir)/pinned         Pinned apps (one class per line)
-
-DAEMON FLAGS (passed through):
-    -p <position>     bottom | top | left | right
-    -i <size>         Icon size in pixels
-    -d                Enable auto-hide
-    -l <layer>        Layer: background | bottom | top | overlay
-    -c <cmd>          Launcher command (e.g. "fuzzel")
 EOF
     ;;
-"" | --*)
-    # Pass any remaining flags through to snappydock-d via env
-    # (QuickShell doesn't support passing args to child Process easily,
-    #  so for now just start)
+"")
     do_start
     ;;
 *)
