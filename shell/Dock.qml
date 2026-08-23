@@ -50,10 +50,15 @@ Scope {
 
             /* ── Unified display list (includes launcher as a native dock item) ── */
             readonly property var displayItems: {
-                var raw = DaemonBridge.dockItems || [];
+                var rawList = DaemonBridge.dockItems || [];
+                var items = new Array(rawList.length);
+                for (var i = 0; i < rawList.length; i++)
+                    items[i] = rawList[i];
+
                 var pos = normalizedLauncherPos(DaemonBridge.config.launcher_pos);
                 if (pos === "none")
-                    return raw;
+                    return items;
+
                 var launcherObj = {
                     className: "_launcher",
                     icon: DaemonBridge.config.launcher_icon || "dots",
@@ -65,9 +70,15 @@ Scope {
                     instances: [],
                     isLauncher: true
                 };
+
+                /* LauncherPos controls order. Alignment only controls position on screen.
+                   start → [Launcher, App1, App2, ...]
+                   end   → [App1, App2, ..., Launcher] */
                 if (pos === "end")
-                    return raw.concat([launcherObj]);
-                return [launcherObj].concat(raw);
+                    items.push(launcherObj);
+                else
+                    items.unshift(launcherObj);
+                return items;
             }
 
             /* ── Layout metrics ──────────────────────────────────────── */
@@ -102,17 +113,7 @@ Scope {
             readonly property int marginLeft:    numberOrDefault(DaemonBridge.config.margin_left,    0)
             readonly property int marginRight:   numberOrDefault(DaemonBridge.config.margin_right,   0)
             readonly property int configuredExclusiveZone: exclusiveZoneFromConfig(DaemonBridge.config.exclusive_zone)
-            readonly property bool wantsFullCrossAxis: {
-                switch (dockPosition) {
-                    case "left":
-                    case "right":
-                        return false;
-                    case "top":
-                    case "bottom":
-                    default:
-                        return Boolean(DaemonBridge.config.full_width) || alignStart || alignEnd;
-                }
-            }
+            readonly property bool fullWidth: Boolean(DaemonBridge.config.full_width)
 
             /* ── Dock content dimensions ─────────────────────────────── */
             /* The dock background (dockBackground) stays at base size.
@@ -203,8 +204,16 @@ Scope {
                     pos += ew + sp;
                 }
                 var totalOrig = n * cell + (n - 1) * sp;
-                var growth = (pos - sp - totalOrig) * rs;
-                var shift = (pos - sp - totalOrig) * 0.5;
+                var totalGrowth = pos - sp - totalOrig;
+                var growth = totalGrowth * rs;
+                var shift;
+                if (fullWidth && alignStart) {
+                    shift = 0;
+                } else if (fullWidth && alignEnd) {
+                    shift = totalGrowth;
+                } else {
+                    shift = totalGrowth * 0.5;
+                }
                 var disps = new Array(n);
                 for (var k = 0; k < n; k++)
                     disps[k] = (nc[k] - (k * (cell + sp) + cell * 0.5) - shift) * rs;
@@ -214,28 +223,12 @@ Scope {
             readonly property real snappyRiseGrowth: _snappyDisplacementData.totalGrowth || 0
             readonly property real dockBaseWidth:   dockLayout.implicitWidth  + Theme.dockPadding * 2
             readonly property real dockBaseHeight:  dockLayout.implicitHeight + Theme.dockPadding * 2
-            readonly property real panelWidth: {
-                switch (dockPosition) {
-                    case "left":
-                    case "right":
-                        return dockBaseWidth + snappyHeadroom + edgePadding;
-                    case "top":
-                    case "bottom":
-                    default:
-                        return wantsFullCrossAxis ? modelData.width : dockBaseWidth + snappyMainOverflow;
-                }
-            }
-            readonly property real panelHeight: {
-                switch (dockPosition) {
-                    case "left":
-                    case "right":
-                        return dockBaseHeight + snappyMainOverflow;
-                    case "top":
-                    case "bottom":
-                    default:
-                        return dockBaseHeight + snappyHeadroom + edgePadding;
-                }
-            }
+            readonly property real panelWidth: isVertical
+                ? dockBaseWidth + snappyHeadroom + edgePadding
+                : dockBaseWidth + snappyMainOverflow
+            readonly property real panelHeight: isHorizontal
+                ? dockBaseHeight + snappyHeadroom + edgePadding
+                : dockBaseHeight + snappyMainOverflow
 
             /* ── AutoHide metrics ────────────────────────────────────── */
 
@@ -351,13 +344,13 @@ Scope {
                     case "left":
                     case "right":
                         axisValue = mapped.y;
-                        axisSize = dockLayout.height;
+                        axisSize = dockLayout.implicitHeight > 0 ? dockLayout.implicitHeight : dockLayout.height;
                         break;
                     case "top":
                     case "bottom":
                     default:
                         axisValue = mapped.x;
-                        axisSize = dockLayout.width;
+                        axisSize = dockLayout.implicitWidth > 0 ? dockLayout.implicitWidth : dockLayout.width;
                         break;
                 }
                 if (axisSize <= 0
@@ -468,12 +461,10 @@ Scope {
                 visible: true
 
                 anchors {
-                    top:    screenScope.dockPosition === "top"
-                    bottom: screenScope.dockPosition === "bottom"
-                    left:   screenScope.dockPosition === "left"
-                            || ((screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom") && screenScope.wantsFullCrossAxis)
-                    right:  screenScope.dockPosition === "right"
-                            || ((screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom") && screenScope.wantsFullCrossAxis)
+                    top:    screenScope.isTop    || (screenScope.isVertical   && (screenScope.fullWidth || screenScope.alignStart))
+                    bottom: screenScope.isBottom || (screenScope.isVertical   && (screenScope.fullWidth || screenScope.alignEnd))
+                    left:   screenScope.isLeft   || (screenScope.isHorizontal && (screenScope.fullWidth || screenScope.alignStart))
+                    right:  screenScope.isRight  || (screenScope.isHorizontal && (screenScope.fullWidth || screenScope.alignEnd))
                 }
 
                 /* Margins are animated to push the surface offscreen.
@@ -482,10 +473,18 @@ Scope {
                    Hyprland passes int32_t margins straight into the
                    geometry calculation, so negative values work natively. */
                 margins {
-                    top:    screenScope.animatedMargin(screenScope.isTop,    screenScope.effectiveMarginTop)
-                    bottom: screenScope.animatedMargin(screenScope.isBottom, screenScope.effectiveMarginBottom)
-                    left:   screenScope.animatedMargin(screenScope.isLeft,   screenScope.effectiveMarginLeft)
-                    right:  screenScope.animatedMargin(screenScope.isRight,  screenScope.effectiveMarginRight)
+                    top:    screenScope.isTop
+                            ? screenScope.animatedMargin(true, screenScope.effectiveMarginTop)
+                            : (!screenScope.fullWidth && screenScope.isVertical && screenScope.alignStart ? screenScope.marginTop : 0)
+                    bottom: screenScope.isBottom
+                            ? screenScope.animatedMargin(true, screenScope.effectiveMarginBottom)
+                            : (!screenScope.fullWidth && screenScope.isVertical && screenScope.alignEnd ? screenScope.marginBottom : 0)
+                    left:   screenScope.isLeft
+                            ? screenScope.animatedMargin(true, screenScope.effectiveMarginLeft)
+                            : (!screenScope.fullWidth && screenScope.isHorizontal && screenScope.alignStart ? screenScope.marginLeft : 0)
+                    right:  screenScope.isRight
+                            ? screenScope.animatedMargin(true, screenScope.effectiveMarginRight)
+                            : (!screenScope.fullWidth && screenScope.isHorizontal && screenScope.alignEnd ? screenScope.marginRight : 0)
                 }
 
                 WlrLayershell.layer: screenScope.layerFromConfig(DaemonBridge.config.layer)
@@ -500,93 +499,48 @@ Scope {
                                   ? ExclusionMode.Auto
                                   : ExclusionMode.Normal)
 
-                implicitWidth:  screenScope.panelWidth
-                implicitHeight: screenScope.panelHeight
+                implicitWidth:  (screenScope.fullWidth && screenScope.isHorizontal)
+                                ? (screenScope.modelData ? screenScope.modelData.width : 1920)
+                                : screenScope.panelWidth
+                implicitHeight: (screenScope.fullWidth && screenScope.isVertical)
+                                ? (screenScope.modelData ? screenScope.modelData.height : 1080)
+                                : screenScope.panelHeight
                 color: "transparent"
 
-                /* ── Full-panel hover surface for autohide ────────────── */
-                /* inputSurface fills the entire PanelWindow so the Wayland
-                   input region always spans the full panel geometry.
-                   When the panel is pushed offscreen by negative margins,
-                   the compositor clips the input region to whatever sliver
-                   of surface remains visible (the edge strip).  This
-                   guarantees hover detection works for ALL positions —
-                   the old approach (mask = dockContainer) failed because
-                   dockContainer is smaller than the panel and offset
-                   from the edge, leaving the strip with no input region
-                   on non-bottom edges.                                    */
+                /* ── Precise input surface: follows dockLayout geometry ─ */
                 Item {
-                    id: inputSurface
-                    anchors.fill: parent
+                    id: iconHitArea
+                    /* Track the Grid's position + some overflow margin */
+                    x: dockLayout.x - (screenScope.snappyMainOverflow / 2) - 8
+                    y: screenScope.isBottom
+                       ? (parent.height - screenScope.dockBaseHeight - screenScope.snappyHeadroom - screenScope.edgePadding)
+                       : (screenScope.isTop ? 0 : dockLayout.y - 8)
+                    width:  screenScope.isHorizontal
+                            ? (dockLayout.implicitWidth + screenScope.snappyMainOverflow + 16)
+                            : parent.width
+                    height: screenScope.isVertical
+                            ? (dockLayout.implicitHeight + screenScope.snappyMainOverflow + 16)
+                            : parent.height
                 }
 
-                /* Input region tracks inputSurface (the full panel surface)
-                   so the compositor can clip it to the visible area.
-                   This replaces the old dockContainer-based region which
-                   did not cover the edge strip on non-bottom positions. */
                 mask: Region {
-                    item: inputSurface
+                    Region { item: dockBackground }
+                    Region { item: iconHitArea }
                 }
 
                 /* ── Dock container (input region, full panel size) ──── */
-                /* dockContainer is the full panel size so hover/click
-                   detection works in the magnification overflow zone.
-                   The visual background is a child Rectangle.           */
                 Rectangle {
                     id: dockContainer
                     color: "transparent"
-
-                    /* Screen-edge anchor — explicit per position */
-                    anchors.left: screenScope.dockPosition === "left"
-                                  || ((screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom") && screenScope.alignStart)
-                                  ? parent.left : undefined
-                    anchors.right: screenScope.dockPosition === "right"
-                                   || ((screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom") && screenScope.alignEnd)
-                                   ? parent.right : undefined
-                    anchors.top: screenScope.dockPosition === "top"
-                                 || ((screenScope.dockPosition === "left" || screenScope.dockPosition === "right") && screenScope.alignStart)
-                                 ? parent.top : undefined
-                    anchors.bottom: screenScope.dockPosition === "bottom"
-                                    || ((screenScope.dockPosition === "left" || screenScope.dockPosition === "right") && screenScope.alignEnd)
-                                    ? parent.bottom : undefined
-                    anchors.horizontalCenter: (screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom") && screenScope.alignCenter
-                                              ? parent.horizontalCenter : undefined
-                    anchors.verticalCenter: (screenScope.dockPosition === "left" || screenScope.dockPosition === "right") && screenScope.alignCenter
-                                            ? parent.verticalCenter : undefined
-
-                    width: {
-                        switch (screenScope.dockPosition) {
-                            case "left":
-                            case "right":
-                                return screenScope.dockBaseWidth + screenScope.snappyHeadroom + screenScope.edgePadding;
-                            case "top":
-                            case "bottom":
-                            default:
-                                return screenScope.dockBaseWidth + screenScope.snappyMainOverflow;
-                        }
-                    }
-                    height: {
-                        switch (screenScope.dockPosition) {
-                            case "left":
-                            case "right":
-                                return screenScope.dockBaseHeight + screenScope.snappyMainOverflow;
-                            case "top":
-                            case "bottom":
-                            default:
-                                return screenScope.dockBaseHeight + screenScope.snappyHeadroom + screenScope.edgePadding;
-                        }
-                    }
-
+                    anchors.fill: parent
                     clip: false
 
-                    /* ── Visual dock background (fixed base size) ────── */
+                    /* ── Visual dock background ────── */
                     Rectangle {
                         id: dockBackground
 
-                        /* Rise-growth properties — kept separate from width/height
-                           so their Behaviors don't interfere with item-add resizes. */
-                        property real _riseW: screenScope.isHorizontal ? screenScope.snappyRiseGrowth : 0
-                        property real _riseH: screenScope.isVertical   ? screenScope.snappyRiseGrowth : 0
+                        property real _riseW: (!screenScope.fullWidth && screenScope.isHorizontal) ? screenScope.snappyRiseGrowth : 0
+                        property real _riseH: (!screenScope.fullWidth && screenScope.isVertical)   ? screenScope.snappyRiseGrowth : 0
                         Behavior on _riseW {
                             enabled: screenScope.snappyMode && screenScope.snappyMouseX === screenScope.pointerUnset
                             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
@@ -596,25 +550,28 @@ Scope {
                             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
                         }
 
-                        width:  screenScope.dockBaseWidth  + _riseW
-                        height: screenScope.dockBaseHeight + _riseH
+                        /* Anchor to the screen edge */
+                        anchors.bottom:       screenScope.isBottom ? parent.bottom : undefined
+                        anchors.bottomMargin: screenScope.isBottom ? screenScope.edgePadding : 0
+                        anchors.top:          screenScope.isTop    ? parent.top    : undefined
+                        anchors.topMargin:    screenScope.isTop    ? screenScope.edgePadding : 0
+                        anchors.left:         screenScope.isLeft   ? parent.left   : undefined
+                        anchors.leftMargin:   screenScope.isLeft   ? screenScope.edgePadding : 0
+                        anchors.right:        screenScope.isRight  ? parent.right  : undefined
+                        anchors.rightMargin:  screenScope.isRight  ? screenScope.edgePadding : 0
 
-                        /* Anchor to the screen edge within the container. */
-                        anchors.bottom:       screenScope.dockPosition === "bottom" ? parent.bottom : undefined
-                        anchors.bottomMargin: screenScope.dockPosition === "bottom" ? screenScope.edgePadding : 0
-                        anchors.top:          screenScope.dockPosition === "top"    ? parent.top    : undefined
-                        anchors.topMargin:    screenScope.dockPosition === "top"    ? screenScope.edgePadding : 0
-                        anchors.left:         screenScope.dockPosition === "left"   ? parent.left   : undefined
-                        anchors.leftMargin:   screenScope.dockPosition === "left"   ? screenScope.edgePadding : 0
-                        anchors.right:        screenScope.dockPosition === "right"  ? parent.right  : undefined
-                        anchors.rightMargin:  screenScope.dockPosition === "right"  ? screenScope.edgePadding : 0
                         /* Center on the main axis */
-                        anchors.horizontalCenter: (screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom")
-                                                  ? parent.horizontalCenter : undefined
-                        anchors.verticalCenter:   (screenScope.dockPosition === "left" || screenScope.dockPosition === "right")
-                                                  ? parent.verticalCenter   : undefined
+                        anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
+                        anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
 
-                        radius: Theme.dockRadius
+                        width:  screenScope.isVertical
+                                ? screenScope.dockBaseWidth
+                                : (screenScope.fullWidth ? parent.width : screenScope.dockBaseWidth + _riseW)
+                        height: screenScope.isHorizontal
+                                ? screenScope.dockBaseHeight
+                                : (screenScope.fullWidth ? parent.height : screenScope.dockBaseHeight + _riseH)
+
+                        radius: screenScope.fullWidth ? 0 : Theme.dockRadius
                         color:  Theme.bgColor
                         border.color: Theme.bgBorder
                         border.width: 1
@@ -623,22 +580,44 @@ Scope {
                     Grid {
                         id: dockLayout
                         clip: false
+                        width:  implicitWidth
+                        height: implicitHeight
 
-                        /* Anchor to the screen edge so icons overflow
-                           away from the edge into the headroom space.   */
-                        anchors.bottom:       screenScope.dockPosition === "bottom" ? parent.bottom : undefined
-                        anchors.bottomMargin: screenScope.dockPosition === "bottom" ? Theme.dockPadding + screenScope.edgePadding : 0
-                        anchors.top:          screenScope.dockPosition === "top"    ? parent.top    : undefined
-                        anchors.topMargin:    screenScope.dockPosition === "top"    ? Theme.dockPadding + screenScope.edgePadding : 0
-                        anchors.left:         screenScope.dockPosition === "left"   ? parent.left   : undefined
-                        anchors.leftMargin:   screenScope.dockPosition === "left"   ? Theme.dockPadding + screenScope.edgePadding : 0
-                        anchors.right:        screenScope.dockPosition === "right"  ? parent.right  : undefined
-                        anchors.rightMargin:  screenScope.dockPosition === "right"  ? Theme.dockPadding + screenScope.edgePadding : 0
+                        /* ── Cross-axis: anchor to the dock's screen edge ── */
+                        anchors.bottom:       screenScope.isBottom ? parent.bottom : undefined
+                        anchors.bottomMargin: screenScope.isBottom ? (Theme.dockPadding + screenScope.edgePadding) : 0
+                        anchors.top:          screenScope.isTop    ? parent.top    : undefined
+                        anchors.topMargin:    screenScope.isTop    ? (Theme.dockPadding + screenScope.edgePadding) : 0
+                        anchors.left:         screenScope.isLeft   ? parent.left   : undefined
+                        anchors.leftMargin:   screenScope.isLeft   ? (Theme.dockPadding + screenScope.edgePadding) : 0
+                        anchors.right:        screenScope.isRight  ? parent.right  : undefined
+                        anchors.rightMargin:  screenScope.isRight  ? (Theme.dockPadding + screenScope.edgePadding) : 0
 
-                        anchors.horizontalCenter: (screenScope.dockPosition === "top" || screenScope.dockPosition === "bottom")
-                                                  ? parent.horizontalCenter : undefined
-                        anchors.verticalCenter:   (screenScope.dockPosition === "left" || screenScope.dockPosition === "right")
-                                                  ? parent.verticalCenter   : undefined
+                        /* ── Main-axis: position icons along the bar ─────── */
+                        /* For horizontal docks (top/bottom): compute x
+                           For vertical docks (left/right): compute y
+                           This replaces the old mess of conditional anchors
+                           that broke Alignment=end + FullWidth=true.         */
+
+                        /* Vertical centering for left/right docks */
+                        anchors.verticalCenter: screenScope.isVertical ? parent.verticalCenter : undefined
+
+                        /* Horizontal position for top/bottom docks */
+                        x: {
+                            if (screenScope.isVertical) return 0;  /* handled by left/right anchors */
+                            var pw = parent ? parent.width : 0;
+                            var gw = implicitWidth;
+                            var pad = Theme.dockPadding + 16;
+                            if (screenScope.fullWidth) {
+                                if (screenScope.alignStart)
+                                    return Math.max(screenScope.marginLeft, 0) + pad;
+                                if (screenScope.alignEnd)
+                                    return pw - gw - Math.max(screenScope.marginRight, 0) - pad;
+                                return (pw - gw) / 2;  /* center */
+                            }
+                            /* Non-fullWidth: panel is already sized to content, center the grid */
+                            return (pw - gw) / 2;
+                        }
 
                         columns: screenScope.isVertical ? 1 : Math.max(1, screenScope.displayItems.length)
                         spacing: Theme.itemSpacing
