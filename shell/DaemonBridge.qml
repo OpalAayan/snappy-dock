@@ -199,6 +199,44 @@ Singleton {
             if (obj.theme_accent)          Theme.accentColor = bridge._fixColor(obj.theme_accent);
             if (obj.theme_text_color)      Theme.textColor = bridge._fixColor(obj.theme_text_color);
             if (obj.theme_icon_hover_bg)   Theme.itemHover = bridge._fixColor(obj.theme_icon_hover_bg);
+
+            /* Menu Colors */
+            if (obj.theme_menu_bg) {
+                Theme.menuBg = bridge._fixColor(obj.theme_menu_bg);
+            } else if (obj.theme_bg) {
+                /* If menu_bg not explicitly set, use theme_bg with high opacity for menu */
+                Theme.menuBg = bridge._fixColor(obj.theme_bg);
+            }
+
+            if (obj.theme_menu_border) {
+                Theme.menuBorder = bridge._fixColor(obj.theme_menu_border);
+            } else if (obj.theme_border_color) {
+                Theme.menuBorder = bridge._fixColor(obj.theme_border_color);
+            }
+
+            if (obj.theme_menu_hover_bg) {
+                Theme.menuHover = bridge._fixColor(obj.theme_menu_hover_bg);
+            } else if (obj.theme_icon_hover_bg) {
+                Theme.menuHover = bridge._fixColor(obj.theme_icon_hover_bg);
+            }
+
+            if (obj.theme_menu_text_color) {
+                Theme.menuTextColor = bridge._fixColor(obj.theme_menu_text_color);
+            } else if (obj.theme_text_color) {
+                Theme.menuTextColor = bridge._fixColor(obj.theme_text_color);
+            }
+
+            if (obj.theme_menu_accent) {
+                Theme.menuActiveBar = bridge._fixColor(obj.theme_menu_accent);
+            } else if (obj.theme_accent) {
+                Theme.menuActiveBar = bridge._fixColor(obj.theme_accent);
+            }
+
+            if (obj.theme_menu_separator) {
+                Theme.separatorColor = bridge._fixColor(obj.theme_menu_separator);
+            } else if (obj.theme_border_color) {
+                Theme.separatorColor = bridge._fixColor(obj.theme_border_color);
+            }
         }
         else if (obj.type === "state") {
             clients   = obj.clients  || [];

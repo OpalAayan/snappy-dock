@@ -189,7 +189,7 @@ FocusScope {
                     anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.className
-                    color: Theme.textColor
+                    color: Theme.menuTextColor
                     font.pixelSize: 13
                     font.bold: true
                     font.family: Theme.fontFamily

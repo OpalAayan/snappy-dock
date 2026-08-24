@@ -63,6 +63,12 @@ Singleton {
     property string themeTextColor: ""
     property string themeIconHoverBg: ""
     property string themeLauncherHoverBg: ""
+    property string themeMenuBg: ""
+    property string themeMenuBorder: ""
+    property string themeMenuHoverBg: ""
+    property string themeMenuTextColor: ""
+    property string themeMenuAccent: ""
+    property string themeMenuSeparator: ""
 
     property bool isLoaded: false
     property string saveStatus: ""
@@ -157,7 +163,7 @@ Singleton {
             }
             else if (currentSection === "theme") {
                 if (key === "background" || key === "bgcolor" || key === "dockbg") store.themeBg = val;
-                else if (key === "bordercolor" || key === "dockoutline") store.themeBorderColor = val;
+                else if (key === "bordercolor" || key === "dockoutline" || key === "outlinecolor") store.themeBorderColor = val;
                 else if (key === "borderwidth" || key === "outlineborderwidth") store.themeBorderWidth = parseInt(val) || 1;
                 else if (key === "radius" || key === "dockradius") store.themeRadius = parseInt(val) || 16;
                 else if (key === "dotrunning")   store.themeDotRunning = val;
@@ -166,6 +172,12 @@ Singleton {
                 else if (key === "textcolor")    store.themeTextColor = val;
                 else if (key === "iconhoverbg")  store.themeIconHoverBg = val;
                 else if (key === "launcherhoverbg") store.themeLauncherHoverBg = val;
+                else if (key === "menubg" || key === "menubackground") store.themeMenuBg = val;
+                else if (key === "menuborder" || key === "menubordercolor") store.themeMenuBorder = val;
+                else if (key === "menuhoverbg" || key === "menuhover") store.themeMenuHoverBg = val;
+                else if (key === "menutextcolor" || key === "menutext") store.themeMenuTextColor = val;
+                else if (key === "menuaccent" || key === "menuactivebar") store.themeMenuAccent = val;
+                else if (key === "menuseparator" || key === "menuseparatorcolor") store.themeMenuSeparator = val;
             }
         }
     }
@@ -223,6 +235,12 @@ Singleton {
         if (store.themeTextColor)       out.push("TextColor=" + store.themeTextColor);
         if (store.themeIconHoverBg)     out.push("IconHoverBg=" + store.themeIconHoverBg);
         if (store.themeLauncherHoverBg) out.push("LauncherHoverBg=" + store.themeLauncherHoverBg);
+        if (store.themeMenuBg)          out.push("MenuBg=" + store.themeMenuBg);
+        if (store.themeMenuBorder)      out.push("MenuBorder=" + store.themeMenuBorder);
+        if (store.themeMenuHoverBg)     out.push("MenuHoverBg=" + store.themeMenuHoverBg);
+        if (store.themeMenuTextColor)   out.push("MenuTextColor=" + store.themeMenuTextColor);
+        if (store.themeMenuAccent)      out.push("MenuAccent=" + store.themeMenuAccent);
+        if (store.themeMenuSeparator)   out.push("MenuSeparator=" + store.themeMenuSeparator);
         out.push("");
         return out.join("\n");
     }
@@ -277,6 +295,12 @@ Singleton {
         themeTextColor = "";
         themeIconHoverBg = "";
         themeLauncherHoverBg = "";
+        themeMenuBg = "";
+        themeMenuBorder = "";
+        themeMenuHoverBg = "";
+        themeMenuTextColor = "";
+        themeMenuAccent = "";
+        themeMenuSeparator = "";
     }
 
     function applyPreset(name) {
@@ -293,6 +317,12 @@ Singleton {
             themeTextColor = "#CDD6F4";
             themeIconHoverBg = "#9DC2F926";
             themeLauncherHoverBg = "#9DC2F933";
+            themeMenuBg = "#1E1E2EFA";
+            themeMenuBorder = "#C1E6FF33";
+            themeMenuHoverBg = "#31324480";
+            themeMenuTextColor = "#CDD6F4";
+            themeMenuAccent = "#9DC2F9";
+            themeMenuSeparator = "#31324480";
         } else if (name === "catppuccin-latte") {
             // Catppuccin Latte — Light cream with blackberry mauve accent
             // Ref: bg=#bcc0cc, card=#eff1f5, accent=#8839ef, text=#4c4f69
@@ -306,6 +336,12 @@ Singleton {
             themeTextColor = "#4C4F69";
             themeIconHoverBg = "#8839EF1A";
             themeLauncherHoverBg = "#8839EF26";
+            themeMenuBg = "#EFF1F5FA";
+            themeMenuBorder = "#8839EF33";
+            themeMenuHoverBg = "#8839EF1A";
+            themeMenuTextColor = "#4C4F69";
+            themeMenuAccent = "#8839EF";
+            themeMenuSeparator = "#CCD0DA80";
         } else if (name === "dracula") {
             // Dracula — Charcoal slate with rich purple
             // Ref: bg=#282a36, card=#44475a, accent=#ab76f5, text=#f8f8f2
@@ -319,6 +355,12 @@ Singleton {
             themeTextColor = "#F8F8F2";
             themeIconHoverBg = "#AB76F526";
             themeLauncherHoverBg = "#AB76F533";
+            themeMenuBg = "#282A36FA";
+            themeMenuBorder = "#AB76F533";
+            themeMenuHoverBg = "#44475A80";
+            themeMenuTextColor = "#F8F8F2";
+            themeMenuAccent = "#AB76F5";
+            themeMenuSeparator = "#44475A80";
         } else if (name === "nord") {
             // Nord — Polar slate with frost blue
             // Ref: bg=#2e3440, card=#3b4252, accent=#5e81ac, text=#eceff4
@@ -332,6 +374,12 @@ Singleton {
             themeTextColor = "#ECEFF4";
             themeIconHoverBg = "#5E81AC26";
             themeLauncherHoverBg = "#5E81AC33";
+            themeMenuBg = "#2E3440FA";
+            themeMenuBorder = "#5E81AC33";
+            themeMenuHoverBg = "#3B425280";
+            themeMenuTextColor = "#ECEFF4";
+            themeMenuAccent = "#5E81AC";
+            themeMenuSeparator = "#3B425280";
         } else if (name === "tokyo-night") {
             // Tokyo Night — Deep indigo with neon pink
             // Ref: bg=#000000, card=#24283b, accent=#f7768e, text=#ffffff
@@ -345,6 +393,12 @@ Singleton {
             themeTextColor = "#FFFFFF";
             themeIconHoverBg = "#F7768E26";
             themeLauncherHoverBg = "#F7768E33";
+            themeMenuBg = "#1F2335FA";
+            themeMenuBorder = "#F7768E33";
+            themeMenuHoverBg = "#41486880";
+            themeMenuTextColor = "#FFFFFF";
+            themeMenuAccent = "#F7768E";
+            themeMenuSeparator = "#41486880";
         } else if (name === "rose-pine") {
             // Rose Pine — Warm twilight with rose gold
             // Ref: bg=#191724, card=#1f1d2e, accent=#ebbcba, text=#e0def4
@@ -358,6 +412,12 @@ Singleton {
             themeTextColor = "#E0DEF4";
             themeIconHoverBg = "#EBBCBA26";
             themeLauncherHoverBg = "#EBBCBA33";
+            themeMenuBg = "#191724FA";
+            themeMenuBorder = "#EBBCBA33";
+            themeMenuHoverBg = "#26233A80";
+            themeMenuTextColor = "#E0DEF4";
+            themeMenuAccent = "#EBBCBA";
+            themeMenuSeparator = "#26233A80";
         } else if (name === "gruvbox") {
             // Gruvbox Dark — Earthy warm with orange
             // Ref: bg=#282828, card=#3c3836, accent=#fe8019, text=#ebdbb2
@@ -371,6 +431,12 @@ Singleton {
             themeTextColor = "#EBDBB2";
             themeIconHoverBg = "#FE801926";
             themeLauncherHoverBg = "#FE801933";
+            themeMenuBg = "#282828FA";
+            themeMenuBorder = "#FE801933";
+            themeMenuHoverBg = "#3C383680";
+            themeMenuTextColor = "#EBDBB2";
+            themeMenuAccent = "#FE8019";
+            themeMenuSeparator = "#3C383680";
         } else if (name === "cyberpunk") {
             // Cyberpunk — Pure black void with neon cyan
             // Ref: bg=#000000, card=#0a0a12, accent=#00fff9, text=#ffffff
@@ -384,6 +450,12 @@ Singleton {
             themeTextColor = "#FFFFFF";
             themeIconHoverBg = "#00FFF91A";
             themeLauncherHoverBg = "#00FFF926";
+            themeMenuBg = "#0A0A12FA";
+            themeMenuBorder = "#00FFF933";
+            themeMenuHoverBg = "#1A1A2E80";
+            themeMenuTextColor = "#FFFFFF";
+            themeMenuAccent = "#00FFF9";
+            themeMenuSeparator = "#1A1A2E80";
         } else if (name === "macos") {
             // macOS — Dark frosted glass with subtle white border
             // Ref: liquid-glassB: bg=#00000033, border=#ffffff33
@@ -397,6 +469,12 @@ Singleton {
             themeTextColor = "#FFFFFF";
             themeIconHoverBg = "#FFFFFF1A";
             themeLauncherHoverBg = "#FFFFFF26";
+            themeMenuBg = "#1E1E1EFA";
+            themeMenuBorder = "#FFFFFF26";
+            themeMenuHoverBg = "#FFFFFF1A";
+            themeMenuTextColor = "#FFFFFF";
+            themeMenuAccent = "#007AFF";
+            themeMenuSeparator = "#FFFFFF1A";
         } else if (name === "stormlight") {
             // Stormlight Slate — Overcast slate with lightning yellow
             // Ref: bg=#292c3c, card=#303446, accent=#f7f36d, text=#ffffff
@@ -410,6 +488,12 @@ Singleton {
             themeTextColor = "#FFFFFF";
             themeIconHoverBg = "#F7F36D1A";
             themeLauncherHoverBg = "#F7F36D26";
+            themeMenuBg = "#292C3CFA";
+            themeMenuBorder = "#F7F36D33";
+            themeMenuHoverBg = "#41455980";
+            themeMenuTextColor = "#FFFFFF";
+            themeMenuAccent = "#F7F36D";
+            themeMenuSeparator = "#41455980";
         }
     }
 }

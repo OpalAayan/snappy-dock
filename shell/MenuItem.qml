@@ -12,7 +12,7 @@ Rectangle {
     property bool   isActive: false
     property bool   isBack: false
     property string iconSource: ""
-    property color  textColor: Theme.textColor
+    property color  textColor: Theme.menuTextColor
     property color  hoverColor: Theme.menuHover
 
     signal clicked()
@@ -49,7 +49,7 @@ Rectangle {
         anchors.leftMargin: 8
         anchors.verticalCenter: parent.verticalCenter
         text: "‹"
-        color: Theme.accentColor
+        color: Theme.menuActiveBar
         font.pixelSize: 16
         font.family: Theme.fontFamily
     }
@@ -85,7 +85,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
         text: root.text
-        color: root.isBold ? Theme.textColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.9)
+        color: root.isBold ? root.textColor : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.9)
         font.pixelSize: 13
         font.bold: root.isBold
         font.family: Theme.fontFamily
@@ -103,7 +103,7 @@ Rectangle {
         anchors.rightMargin: 10
         readonly property bool isChevron: root.rightText === ">" || root.rightText === "<"
         text: root.rightText === ">" ? "›" : (root.rightText === "<" ? "‹" : root.rightText)
-        color: isChevron ? Theme.accentColor : Qt.rgba(Theme.textColor.r, Theme.textColor.g, Theme.textColor.b, 0.45)
+        color: isChevron ? Theme.menuActiveBar : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.55)
         font.pixelSize: isChevron ? 16 : 13
         font.family: Theme.fontFamily
     }

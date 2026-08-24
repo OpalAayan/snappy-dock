@@ -111,6 +111,12 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->theme_text_color       = str_dup("");
     cfg->theme_icon_hover_bg    = str_dup("");
     cfg->theme_launcher_hover_bg= str_dup("");
+    cfg->theme_menu_bg          = str_dup("");
+    cfg->theme_menu_border      = str_dup("");
+    cfg->theme_menu_hover_bg    = str_dup("");
+    cfg->theme_menu_text_color  = str_dup("");
+    cfg->theme_menu_accent      = str_dup("");
+    cfg->theme_menu_separator   = str_dup("");
 }
 
 /* ── INI parser ──────────────────────────────────────────────────────── */
@@ -233,6 +239,24 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
         } else if (str_eq_ci(key, "LauncherHoverBg")) {
             free(cfg->theme_launcher_hover_bg);
             cfg->theme_launcher_hover_bg = str_dup(val);
+        } else if (str_eq_ci(key, "MenuBg") || str_eq_ci(key, "MenuBackground")) {
+            free(cfg->theme_menu_bg);
+            cfg->theme_menu_bg = str_dup(val);
+        } else if (str_eq_ci(key, "MenuBorder") || str_eq_ci(key, "MenuBorderColor")) {
+            free(cfg->theme_menu_border);
+            cfg->theme_menu_border = str_dup(val);
+        } else if (str_eq_ci(key, "MenuHoverBg") || str_eq_ci(key, "MenuHover")) {
+            free(cfg->theme_menu_hover_bg);
+            cfg->theme_menu_hover_bg = str_dup(val);
+        } else if (str_eq_ci(key, "MenuTextColor") || str_eq_ci(key, "MenuText")) {
+            free(cfg->theme_menu_text_color);
+            cfg->theme_menu_text_color = str_dup(val);
+        } else if (str_eq_ci(key, "MenuAccent") || str_eq_ci(key, "MenuActiveBar")) {
+            free(cfg->theme_menu_accent);
+            cfg->theme_menu_accent = str_dup(val);
+        } else if (str_eq_ci(key, "MenuSeparator") || str_eq_ci(key, "MenuSeparatorColor")) {
+            free(cfg->theme_menu_separator);
+            cfg->theme_menu_separator = str_dup(val);
         }
     }
 }
@@ -411,6 +435,12 @@ void config_free(void)
     free(s_cfg.theme_text_color);
     free(s_cfg.theme_icon_hover_bg);
     free(s_cfg.theme_launcher_hover_bg);
+    free(s_cfg.theme_menu_bg);
+    free(s_cfg.theme_menu_border);
+    free(s_cfg.theme_menu_hover_bg);
+    free(s_cfg.theme_menu_text_color);
+    free(s_cfg.theme_menu_accent);
+    free(s_cfg.theme_menu_separator);
     memset(&s_cfg, 0, sizeof(s_cfg));
 }
 
@@ -437,6 +467,12 @@ void config_free_fields(DockConfig *cfg)
     free(cfg->theme_text_color);
     free(cfg->theme_icon_hover_bg);
     free(cfg->theme_launcher_hover_bg);
+    free(cfg->theme_menu_bg);
+    free(cfg->theme_menu_border);
+    free(cfg->theme_menu_hover_bg);
+    free(cfg->theme_menu_text_color);
+    free(cfg->theme_menu_accent);
+    free(cfg->theme_menu_separator);
     memset(cfg, 0, sizeof(*cfg));
 }
 

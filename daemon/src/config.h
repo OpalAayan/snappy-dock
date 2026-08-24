@@ -64,6 +64,12 @@ typedef struct {
     char *theme_text_color;         /* text color */
     char *theme_icon_hover_bg;      /* icon hover background color */
     char *theme_launcher_hover_bg;  /* launcher hover background color */
+    char *theme_menu_bg;            /* context menu background */
+    char *theme_menu_border;        /* context menu border color */
+    char *theme_menu_hover_bg;      /* context menu item hover background */
+    char *theme_menu_text_color;    /* context menu text color */
+    char *theme_menu_accent;        /* context menu active bar / chevron accent */
+    char *theme_menu_separator;     /* context menu separator line color */
 } DockConfig;
 
 /* ── API ─────────────────────────────────────────────────────────────── */

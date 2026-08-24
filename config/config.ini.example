@@ -202,3 +202,21 @@ Weight=Bold
 # Background highlight on launcher button hover.
 # LauncherHoverBg=#FFFFFF24
 
+# Context menu background color.
+# MenuBg=#1E1E2EFA
+
+# Context menu border outline color.
+# MenuBorder=#FFFFFF1A
+
+# Context menu item hover highlight.
+# MenuHoverBg=#FFFFFF1A
+
+# Context menu text color.
+# MenuTextColor=#CDD6F4
+
+# Context menu active indicator and navigation chevron accent.
+# MenuAccent=#CBA6F7
+
+# Context menu separator line color.
+# MenuSeparator=#FFFFFF1A
+

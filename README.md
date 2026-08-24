@@ -291,6 +291,12 @@ Custom color overrides for the dock bar (supports hex `#RRGGBB`, `#RRGGBBAA`, `r
 | `TextColor` | `#cdd6f4` | Text color for labels and custom launcher glyphs. |
 | `IconHoverBg` | `rgba(1,1,1,0.10)` | Highlight color on dock icon hover. |
 | `LauncherHoverBg` | `rgba(1,1,1,0.10)` | Highlight color on launcher button hover. |
+| `MenuBg` | Auto-derived / `#1E1E2EFA` | Context menu card background. |
+| `MenuBorder` | `rgba(1,1,1,0.10)` | Context menu outline border. |
+| `MenuHoverBg` | `rgba(1,1,1,0.08)` | Context menu item hover highlight. |
+| `MenuTextColor` | Auto-derived / `#cdd6f4` | Context menu item and title text color. |
+| `MenuAccent` | `#cba6f7` | Context menu active indicator bar and chevron color. |
+| `MenuSeparator` | `rgba(1,1,1,0.06)` | Context menu separator line color. |
 
 ## Pinned Apps
 

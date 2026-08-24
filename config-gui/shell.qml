@@ -733,6 +733,51 @@ FloatingWindow {
                             onTextEdited: val => ConfigStore.themeTextColor = val
                         }
                     }
+
+                    M3Card {
+                        title: "Context Menu Colors [Theme]"
+                        description: "Customize colors for the right-click app context menu."
+
+                        M3TextField {
+                            label: "Menu Background"
+                            description: "Context menu card background (leave empty to follow dock)"
+                            placeholder: "#1E1E2EFA"
+                            text: ConfigStore.themeMenuBg || ""
+                            onTextEdited: val => ConfigStore.themeMenuBg = val
+                        }
+
+                        M3TextField {
+                            label: "Menu Border"
+                            description: "Context menu border outline"
+                            placeholder: "#FFFFFF1A"
+                            text: ConfigStore.themeMenuBorder || ""
+                            onTextEdited: val => ConfigStore.themeMenuBorder = val
+                        }
+
+                        M3TextField {
+                            label: "Menu Item Hover Background"
+                            description: "Highlight color when hovering menu rows"
+                            placeholder: "#FFFFFF1A"
+                            text: ConfigStore.themeMenuHoverBg || ""
+                            onTextEdited: val => ConfigStore.themeMenuHoverBg = val
+                        }
+
+                        M3TextField {
+                            label: "Menu Text Color"
+                            description: "Menu title and item text (ensure high contrast with Menu Background)"
+                            placeholder: "#FFFFFF"
+                            text: ConfigStore.themeMenuTextColor || ""
+                            onTextEdited: val => ConfigStore.themeMenuTextColor = val
+                        }
+
+                        M3TextField {
+                            label: "Menu Accent"
+                            description: "Active indicator bar and navigation arrow color"
+                            placeholder: "#D0BCFF"
+                            text: ConfigStore.themeMenuAccent || ""
+                            onTextEdited: val => ConfigStore.themeMenuAccent = val
+                        }
+                    }
                 }
             }
         }

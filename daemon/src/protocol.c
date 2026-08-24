@@ -112,6 +112,18 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_string(cfg->theme_icon_hover_bg ? cfg->theme_icon_hover_bg : ""));
     json_object_object_add(obj, "theme_launcher_hover_bg",
         json_object_new_string(cfg->theme_launcher_hover_bg ? cfg->theme_launcher_hover_bg : ""));
+    json_object_object_add(obj, "theme_menu_bg",
+        json_object_new_string(cfg->theme_menu_bg ? cfg->theme_menu_bg : ""));
+    json_object_object_add(obj, "theme_menu_border",
+        json_object_new_string(cfg->theme_menu_border ? cfg->theme_menu_border : ""));
+    json_object_object_add(obj, "theme_menu_hover_bg",
+        json_object_new_string(cfg->theme_menu_hover_bg ? cfg->theme_menu_hover_bg : ""));
+    json_object_object_add(obj, "theme_menu_text_color",
+        json_object_new_string(cfg->theme_menu_text_color ? cfg->theme_menu_text_color : ""));
+    json_object_object_add(obj, "theme_menu_accent",
+        json_object_new_string(cfg->theme_menu_accent ? cfg->theme_menu_accent : ""));
+    json_object_object_add(obj, "theme_menu_separator",
+        json_object_new_string(cfg->theme_menu_separator ? cfg->theme_menu_separator : ""));
 
     const char *str = json_object_to_json_string_ext(obj,
         JSON_C_TO_STRING_PLAIN);
