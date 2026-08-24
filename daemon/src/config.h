@@ -52,6 +52,18 @@ typedef struct {
     int    icon_spacing;    /* gap between dock items (px), default 2      */
     double magnification;   /* extra scale on hover (0.0–2.0), default 0.78*/
     double rise_spacing;    /* main-axis push factor, snappy only (0.0–2.0)*/
+
+    /* Theme (styling & colors) */
+    char *theme_bg;                 /* dock background color hex/rgba */
+    char *theme_border_color;       /* dock border color hex/rgba */
+    int   theme_border_width;       /* px, default 1 */
+    int   theme_radius;             /* px, default 16 */
+    char *theme_dot_running;        /* running app indicator color */
+    char *theme_dot_active;         /* active app indicator color */
+    char *theme_accent;             /* accent color */
+    char *theme_text_color;         /* text color */
+    char *theme_icon_hover_bg;      /* icon hover background color */
+    char *theme_launcher_hover_bg;  /* launcher hover background color */
 } DockConfig;
 
 /* ── API ─────────────────────────────────────────────────────────────── */

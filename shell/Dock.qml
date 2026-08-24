@@ -581,7 +581,7 @@ Scope {
                         radius: screenScope.fullWidth ? 0 : Theme.dockRadius
                         color:  Theme.bgColor
                         border.color: Theme.bgBorder
-                        border.width: 1
+                        border.width: Theme.bgBorderWidth
                     }
 
                     Grid {

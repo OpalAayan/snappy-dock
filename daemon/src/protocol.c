@@ -92,6 +92,26 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_double(cfg->magnification));
     json_object_object_add(obj, "rise_spacing",
         json_object_new_double(cfg->rise_spacing));
+    json_object_object_add(obj, "theme_bg",
+        json_object_new_string(cfg->theme_bg ? cfg->theme_bg : ""));
+    json_object_object_add(obj, "theme_border_color",
+        json_object_new_string(cfg->theme_border_color ? cfg->theme_border_color : ""));
+    json_object_object_add(obj, "theme_border_width",
+        json_object_new_int(cfg->theme_border_width));
+    json_object_object_add(obj, "theme_radius",
+        json_object_new_int(cfg->theme_radius));
+    json_object_object_add(obj, "theme_dot_running",
+        json_object_new_string(cfg->theme_dot_running ? cfg->theme_dot_running : ""));
+    json_object_object_add(obj, "theme_dot_active",
+        json_object_new_string(cfg->theme_dot_active ? cfg->theme_dot_active : ""));
+    json_object_object_add(obj, "theme_accent",
+        json_object_new_string(cfg->theme_accent ? cfg->theme_accent : ""));
+    json_object_object_add(obj, "theme_text_color",
+        json_object_new_string(cfg->theme_text_color ? cfg->theme_text_color : ""));
+    json_object_object_add(obj, "theme_icon_hover_bg",
+        json_object_new_string(cfg->theme_icon_hover_bg ? cfg->theme_icon_hover_bg : ""));
+    json_object_object_add(obj, "theme_launcher_hover_bg",
+        json_object_new_string(cfg->theme_launcher_hover_bg ? cfg->theme_launcher_hover_bg : ""));
 
     const char *str = json_object_to_json_string_ext(obj,
         JSON_C_TO_STRING_PLAIN);

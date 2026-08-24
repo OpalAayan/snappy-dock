@@ -13,22 +13,23 @@ import Quickshell
 import QtQuick
 
 Singleton {
-    /* ── Colors (Catppuccin Mocha inspired) ──────────────────────── */
-    readonly property color bgColor:        Qt.rgba(0.07, 0.07, 0.11, 0.78)
-    readonly property color bgBorder:       Qt.rgba(1, 1, 1, 0.08)
-    readonly property color itemHover:      Qt.rgba(1, 1, 1, 0.10)
-    readonly property color itemActive:     Qt.rgba(1, 1, 1, 0.18)
-    readonly property color accentColor:    "#cba6f7"
-    readonly property color dotActive:      "#cba6f7"
-    readonly property color dotRunning:     Qt.rgba(1, 1, 1, 0.55)
-    readonly property color dotSmall:       Qt.rgba(1, 1, 1, 0.25)
-    readonly property color textColor:      "#cdd6f4"
-    readonly property color menuBg:         Qt.rgba(0.08, 0.08, 0.13, 0.92)
-    readonly property color menuBorder:     Qt.rgba(1, 1, 1, 0.10)
-    readonly property color menuHover:      Qt.rgba(1, 1, 1, 0.08)
-    readonly property color menuAccent:     Qt.rgba(0.80, 0.65, 0.97, 0.12)
-    readonly property color menuActiveBar:  "#cba6f7"
-    readonly property color separatorColor: Qt.rgba(1, 1, 1, 0.06)
+    /* ── Colors (defaults to Catppuccin Mocha inspired) ──────────── */
+    property color bgColor:        Qt.rgba(0.07, 0.07, 0.11, 0.78)
+    property color bgBorder:       Qt.rgba(1, 1, 1, 0.08)
+    property int   bgBorderWidth:  1
+    property color itemHover:      Qt.rgba(1, 1, 1, 0.10)
+    property color itemActive:     Qt.rgba(1, 1, 1, 0.18)
+    property color accentColor:    "#cba6f7"
+    property color dotActive:      "#cba6f7"
+    property color dotRunning:     Qt.rgba(1, 1, 1, 0.55)
+    property color dotSmall:       Qt.rgba(1, 1, 1, 0.25)
+    property color textColor:      "#cdd6f4"
+    property color menuBg:         Qt.rgba(0.08, 0.08, 0.13, 0.92)
+    property color menuBorder:     Qt.rgba(1, 1, 1, 0.10)
+    property color menuHover:      Qt.rgba(1, 1, 1, 0.08)
+    property color menuAccent:     Qt.rgba(0.80, 0.65, 0.97, 0.12)
+    property color menuActiveBar:  "#cba6f7"
+    property color separatorColor: Qt.rgba(1, 1, 1, 0.06)
 
     /* ── Sizes ───────────────────────────────────────────────────── */
     property int iconSize:       48
@@ -36,9 +37,9 @@ Singleton {
     property string iconFallback: "application-x-executable"
     property string fontFamily:   "Sans"
     property int fontWeight:      Font.Bold
-    readonly property int dockRadius:     16
-    readonly property int dockPadding:    6
-    readonly property int itemPadding:    5
+    property int dockRadius:     16
+    property int dockPadding:    6
+    property int itemPadding:    5
     property int itemSpacing:    2
     readonly property int dotSize:        4
     readonly property int dotActiveWidth: 14

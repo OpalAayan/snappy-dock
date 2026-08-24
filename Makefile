@@ -39,6 +39,7 @@ WRAPPER_BIN = snappy-dock
 
 # Shell and Config
 SHELL_DIR = shell
+CONFIG_GUI_DIR = config-gui
 CONFIG_EXAMPLE = config/config.ini.example
 
 .PHONY: all clean install uninstall
@@ -68,6 +69,10 @@ install: all
 	cp -r $(SHELL_DIR) $(DESTDIR)$(APP_DATADIR)/
 	find $(DESTDIR)$(APP_DATADIR)/$(SHELL_DIR) -type d -exec chmod 755 {} +
 	find $(DESTDIR)$(APP_DATADIR)/$(SHELL_DIR) -type f -exec chmod 644 {} +
+	
+	cp -r $(CONFIG_GUI_DIR) $(DESTDIR)$(APP_DATADIR)/
+	find $(DESTDIR)$(APP_DATADIR)/$(CONFIG_GUI_DIR) -type d -exec chmod 755 {} +
+	find $(DESTDIR)$(APP_DATADIR)/$(CONFIG_GUI_DIR) -type f -exec chmod 644 {} +
 	
 	install -m 644 $(CONFIG_EXAMPLE) $(DESTDIR)$(APP_DATADIR)/
 	@echo ""

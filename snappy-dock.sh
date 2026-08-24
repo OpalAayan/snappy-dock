@@ -44,6 +44,37 @@ find_shell_dir() {
     echo ""
 }
 
+find_config_gui_dir() {
+    if [ -n "$SNAPPY_DOCK_CONFIG_GUI" ] && [ -d "$SNAPPY_DOCK_CONFIG_GUI" ]; then
+        echo "$SNAPPY_DOCK_CONFIG_GUI"
+        return
+    fi
+
+    # Check relative to this script's location
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+    if [ -f "$script_dir/config-gui/shell.qml" ]; then
+        echo "$script_dir/config-gui"
+        return
+    fi
+    if [ -f "$script_dir/../share/snappy-dock/config-gui/shell.qml" ]; then
+        echo "$script_dir/../share/snappy-dock/config-gui"
+        return
+    fi
+
+    # Check common install paths
+    for dir in \
+        "/usr/local/share/snappy-dock/config-gui" \
+        "/usr/share/snappy-dock/config-gui" \
+        "$HOME/.local/share/snappy-dock/config-gui"; do
+        if [ -f "$dir/shell.qml" ]; then
+            echo "$dir"
+            return
+        fi
+    done
+
+    echo ""
+}
+
 # ── Config path ─────────────────────────────────────────────────────
 config_dir() {
     if [ -n "$XDG_CONFIG_HOME" ]; then
@@ -124,9 +155,19 @@ do_kill() {
     pkill -x "snappydock-d" 2>/dev/null
     # Give the daemon a moment to exit, which will also close QuickShell
     sleep 0.2
-    # If QuickShell is still running with our shell, kill it too
-    pkill -f "quickshell.*snappy-dock" 2>/dev/null
+    # Kill only dock quickshell processes (not config-gui)
+    pkill -f "quickshell.*snappy-dock/shell" 2>/dev/null
     echo "$APP_NAME: stopped"
+}
+
+# Kill only the dock (daemon + dock shell), leave config-gui alive
+do_kill_dock_only() {
+    pkill -x "snappydock-d" 2>/dev/null
+    sleep 0.2
+    # Kill only the dock shell, not config-gui
+    pkill -f "quickshell.*snappy-dock/shell" 2>/dev/null
+    # Extra safety: don't kill anything matching config-gui
+    echo "$APP_NAME: dock stopped"
 }
 
 do_start() {
@@ -152,6 +193,48 @@ do_start() {
     echo "$APP_NAME: starting (shell: $shell_dir)"
     apply_icon_theme_config
     exec quickshell -p "$shell_dir"
+}
+
+# Start the dock detached in background, return immediately
+do_start_detached() {
+    shell_dir="$(find_shell_dir)"
+    if [ -z "$shell_dir" ]; then
+        echo "$APP_NAME: ERROR: Cannot find shell directory." >&2
+        exit 1
+    fi
+
+    if ! command -v snappydock-d >/dev/null 2>&1; then
+        echo "$APP_NAME: ERROR: snappydock-d not found in PATH." >&2
+        exit 1
+    fi
+
+    if ! command -v quickshell >/dev/null 2>&1; then
+        echo "$APP_NAME: ERROR: quickshell not found in PATH." >&2
+        exit 1
+    fi
+
+    apply_icon_theme_config
+    nohup quickshell -p "$shell_dir" >/dev/null 2>&1 &
+    disown
+    echo "$APP_NAME: dock started (pid $!)"
+}
+
+do_config_gui() {
+    gui_dir="$(find_config_gui_dir)"
+    if [ -z "$gui_dir" ]; then
+        echo "$APP_NAME: ERROR: Cannot find config-gui directory." >&2
+        echo "  Set SNAPPY_DOCK_CONFIG_GUI or reinstall with 'sudo make install'" >&2
+        exit 1
+    fi
+
+    if ! command -v quickshell >/dev/null 2>&1; then
+        echo "$APP_NAME: ERROR: quickshell not found in PATH." >&2
+        echo "  Install QuickShell: https://quickshell.outfoxxed.me/" >&2
+        exit 1
+    fi
+
+    echo "$APP_NAME: opening settings GUI (shell: $gui_dir)"
+    exec quickshell -p "$gui_dir"
 }
 
 # ── Main ────────────────────────────────────────────────────────────
@@ -186,6 +269,9 @@ if [ "$VERBOSE_LEVEL" -gt 0 ]; then
 fi
 
 case "${ACTION:-}" in
+--config-gui | -g | --gui)
+    do_config_gui
+    ;;
 --kill | -k)
     do_kill
     ;;
@@ -193,6 +279,12 @@ case "${ACTION:-}" in
     do_kill
     sleep 0.3
     do_start
+    ;;
+--restart-dock)
+    # Used by config-gui: kill only the dock, start it detached, exit cleanly
+    do_kill_dock_only
+    sleep 0.5
+    do_start_detached
     ;;
 --status | -s)
     if is_running; then
@@ -218,6 +310,7 @@ $APP_NAME $VERSION — lightweight Hyprland dock
 
 USAGE:
     snappy-dock                  Start the dock
+    snappy-dock --config-gui     Open settings GUI
     snappy-dock --kill           Kill running instance
     snappy-dock --restart        Restart (kill + start)
     snappy-dock --status         Check if running

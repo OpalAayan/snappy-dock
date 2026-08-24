@@ -160,3 +160,45 @@ Family=Rubik
 # Font weight: Normal, Bold, Light, Medium, SemiBold
 Weight=Bold
 
+[Theme]
+
+# Background color of the dock bar.
+# Supports Hex (#RRGGBB, #RRGGBBAA), rgba(), or transparent.
+# Examples:
+#   Background=#1E1E2ECC
+#   Background=#141218E6
+# Background=#1E1E2ECC
+
+# Outline / border color of the dock bar.
+# Examples:
+#   BorderColor=#FFFFFF1A
+#   BorderColor=#D0BCFF33
+# BorderColor=#FFFFFF1A
+
+# Border width in pixels (0 for no border).
+# BorderWidth=1
+
+# Corner radius of the dock bar in pixels.
+# Radius=16
+
+# Active running window dot indicator color.
+# Examples:
+#   DotActive=#D0BCFF
+#   DotActive=#CBA6F7
+# DotActive=#CBA6F7
+
+# Running (unfocused) window dot indicator color.
+# DotRunning=#FFFFFF80
+
+# Accent color used for active elements and menu indicators.
+# AccentColor=#CBA6F7
+
+# Text color for labels and glyphs.
+# TextColor=#CDD6F4
+
+# Background highlight on icon hover.
+# IconHoverBg=#FFFFFF1A
+
+# Background highlight on launcher button hover.
+# LauncherHoverBg=#FFFFFF24
+

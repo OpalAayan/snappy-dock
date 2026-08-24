@@ -101,6 +101,16 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->icon_spacing   = 2;
     cfg->magnification  = 0.78;
     cfg->rise_spacing    = 0.5;
+    cfg->theme_bg               = str_dup("");
+    cfg->theme_border_color     = str_dup("");
+    cfg->theme_border_width     = 1;
+    cfg->theme_radius           = 16;
+    cfg->theme_dot_running      = str_dup("");
+    cfg->theme_dot_active       = str_dup("");
+    cfg->theme_accent           = str_dup("");
+    cfg->theme_text_color       = str_dup("");
+    cfg->theme_icon_hover_bg    = str_dup("");
+    cfg->theme_launcher_hover_bg= str_dup("");
 }
 
 /* ── INI parser ──────────────────────────────────────────────────────── */
@@ -193,6 +203,36 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
         } else if (str_eq_ci(key, "Weight")) {
             free(cfg->font_weight);
             cfg->font_weight = str_dup(val);
+        }
+    } else if (str_eq_ci(section, "Theme")) {
+        if (str_eq_ci(key, "Background") || str_eq_ci(key, "BgColor") || str_eq_ci(key, "DockBg")) {
+            free(cfg->theme_bg);
+            cfg->theme_bg = str_dup(val);
+        } else if (str_eq_ci(key, "BorderColor") || str_eq_ci(key, "DockOutline") || str_eq_ci(key, "OutlineColor")) {
+            free(cfg->theme_border_color);
+            cfg->theme_border_color = str_dup(val);
+        } else if (str_eq_ci(key, "BorderWidth") || str_eq_ci(key, "OutlineBorderWidth")) {
+            cfg->theme_border_width = atoi(val);
+        } else if (str_eq_ci(key, "Radius") || str_eq_ci(key, "DockRadius")) {
+            cfg->theme_radius = atoi(val);
+        } else if (str_eq_ci(key, "DotRunning")) {
+            free(cfg->theme_dot_running);
+            cfg->theme_dot_running = str_dup(val);
+        } else if (str_eq_ci(key, "DotActive")) {
+            free(cfg->theme_dot_active);
+            cfg->theme_dot_active = str_dup(val);
+        } else if (str_eq_ci(key, "AccentColor") || str_eq_ci(key, "Accent")) {
+            free(cfg->theme_accent);
+            cfg->theme_accent = str_dup(val);
+        } else if (str_eq_ci(key, "TextColor")) {
+            free(cfg->theme_text_color);
+            cfg->theme_text_color = str_dup(val);
+        } else if (str_eq_ci(key, "IconHoverBg")) {
+            free(cfg->theme_icon_hover_bg);
+            cfg->theme_icon_hover_bg = str_dup(val);
+        } else if (str_eq_ci(key, "LauncherHoverBg")) {
+            free(cfg->theme_launcher_hover_bg);
+            cfg->theme_launcher_hover_bg = str_dup(val);
         }
     }
 }
@@ -363,6 +403,14 @@ void config_free(void)
     free(s_cfg.font_family);
     free(s_cfg.font_weight);
     free(s_cfg.mode);
+    free(s_cfg.theme_bg);
+    free(s_cfg.theme_border_color);
+    free(s_cfg.theme_dot_running);
+    free(s_cfg.theme_dot_active);
+    free(s_cfg.theme_accent);
+    free(s_cfg.theme_text_color);
+    free(s_cfg.theme_icon_hover_bg);
+    free(s_cfg.theme_launcher_hover_bg);
     memset(&s_cfg, 0, sizeof(s_cfg));
 }
 
@@ -381,6 +429,14 @@ void config_free_fields(DockConfig *cfg)
     free(cfg->font_family);
     free(cfg->font_weight);
     free(cfg->mode);
+    free(cfg->theme_bg);
+    free(cfg->theme_border_color);
+    free(cfg->theme_dot_running);
+    free(cfg->theme_dot_active);
+    free(cfg->theme_accent);
+    free(cfg->theme_text_color);
+    free(cfg->theme_icon_hover_bg);
+    free(cfg->theme_launcher_hover_bg);
     memset(cfg, 0, sizeof(*cfg));
 }
 

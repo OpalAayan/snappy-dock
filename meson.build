@@ -96,6 +96,12 @@ install_subdir(
   install_dir: get_option('datadir') / 'snappy-dock',
 )
 
+# ── Install Config GUI Files ─────────────────────────────────────────
+install_subdir(
+  'config-gui',
+  install_dir: get_option('datadir') / 'snappy-dock',
+)
+
 # ── Install Example Config ───────────────────────────────────────────
 install_data(
   'config/config.ini.example',

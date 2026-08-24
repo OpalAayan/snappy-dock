@@ -124,6 +124,7 @@ All wrapper commands:
 
 ```sh
 snappy-dock                  # Start the dock
+snappy-dock --config-gui     # Open interactive settings GUI
 snappy-dock --restart        # Kill + start
 snappy-dock --kill           # Stop the dock
 snappy-dock --status         # Check if running
@@ -273,6 +274,23 @@ Extra spacing between the dock and screen edges, in pixels.
 | --- | --- | --- |
 | `Family` | Font family name | `Sans` |
 | `Weight` | `Normal`, `Bold`, `Light`, `Medium`, `SemiBold` | `Bold` |
+
+### `[Theme]` section
+
+Custom color overrides for the dock bar (supports hex `#RRGGBB`, `#RRGGBBAA`, `rgba(...)`, or `transparent`).
+
+| Key | Default | Notes |
+| --- | --- | --- |
+| `Background` / `BgColor` | (Catppuccin Mocha) | Dock background color. |
+| `BorderColor` / `DockOutline` | `rgba(1,1,1,0.08)` | Dock outline border color. |
+| `BorderWidth` | `1` | Border width in pixels (0 for off). |
+| `Radius` / `DockRadius` | `16` | Dock corner radius in pixels. |
+| `DotActive` | `#cba6f7` | Active focused window dot indicator color. |
+| `DotRunning` | `rgba(1,1,1,0.55)` | Running (unfocused) window dot indicator color. |
+| `AccentColor` | `#cba6f7` | Accent color for active elements. |
+| `TextColor` | `#cdd6f4` | Text color for labels and custom launcher glyphs. |
+| `IconHoverBg` | `rgba(1,1,1,0.10)` | Highlight color on dock icon hover. |
+| `LauncherHoverBg` | `rgba(1,1,1,0.10)` | Highlight color on launcher button hover. |
 
 ## Pinned Apps
 

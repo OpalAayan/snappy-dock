@@ -186,6 +186,19 @@ Singleton {
                              : w === "bold"      ? Font.Bold
                              : Font.Normal;
             Theme.itemSpacing = (obj.icon_spacing !== undefined && obj.icon_spacing >= 0) ? obj.icon_spacing : 2;
+
+            /* Apply custom Theme if set.
+             * Users (and the config-gui presets) write CSS-style #RRGGBBAA.
+             * Qt/QML expects #AARRGGBB.  Convert any 8-digit hex strings. */
+            if (obj.theme_bg)              Theme.bgColor = bridge._fixColor(obj.theme_bg);
+            if (obj.theme_border_color)    Theme.bgBorder = bridge._fixColor(obj.theme_border_color);
+            if (obj.theme_border_width >= 0) Theme.bgBorderWidth = obj.theme_border_width;
+            if (obj.theme_radius > 0)      Theme.dockRadius = obj.theme_radius;
+            if (obj.theme_dot_running)     Theme.dotRunning = bridge._fixColor(obj.theme_dot_running);
+            if (obj.theme_dot_active)      Theme.dotActive = bridge._fixColor(obj.theme_dot_active);
+            if (obj.theme_accent)          Theme.accentColor = bridge._fixColor(obj.theme_accent);
+            if (obj.theme_text_color)      Theme.textColor = bridge._fixColor(obj.theme_text_color);
+            if (obj.theme_icon_hover_bg)   Theme.itemHover = bridge._fixColor(obj.theme_icon_hover_bg);
         }
         else if (obj.type === "state") {
             clients   = obj.clients  || [];
@@ -195,6 +208,43 @@ Singleton {
             activeMon  = obj.active_mon  || "";
             _recompute();
         }
+    }
+
+    /* ── Convert CSS color formats to Qt-compatible ────────────────── */
+    /*  CSS uses #RRGGBBAA, Qt/QML uses #AARRGGBB.
+     *  Also handles rgba(r,g,b,a) -> Qt.rgba() format.
+     *  6-digit hex (#RRGGBB) and named colors pass through unchanged. */
+    function _fixColor(s) {
+        if (!s || s.length === 0) return s;
+
+        // 9-char string = # + 8 hex digits = #RRGGBBAA (CSS)
+        if (s.length === 9 && s.charAt(0) === '#') {
+            var rr = s.substring(1, 3);
+            var gg = s.substring(3, 5);
+            var bb = s.substring(5, 7);
+            var aa = s.substring(7, 9);
+            return '#' + aa + rr + gg + bb;  // -> #AARRGGBB (Qt)
+        }
+
+        // rgba(r, g, b, a) -> convert to #AARRGGBB
+        if (s.indexOf("rgba(") === 0 || s.indexOf("RGBA(") === 0) {
+            var inner = s.substring(5, s.length - 1);
+            var parts = inner.split(",");
+            if (parts.length === 4) {
+                var ri = Math.round(parseFloat(parts[0].trim()));
+                var gi = Math.round(parseFloat(parts[1].trim()));
+                var bi = Math.round(parseFloat(parts[2].trim()));
+                var af = parseFloat(parts[3].trim());
+                // If alpha is 0-1 float, scale to 0-255
+                if (af <= 1.0) af = Math.round(af * 255);
+                else af = Math.round(af);
+                var hex = function(v) { var h = v.toString(16); return h.length < 2 ? '0' + h : h; };
+                return '#' + hex(af) + hex(ri) + hex(gi) + hex(bi);
+            }
+        }
+
+        // 7-char #RRGGBB, named colors, or other formats — pass through
+        return s;
     }
 
     /* ── Send commands to daemon stdin ────────────────────────────── */
