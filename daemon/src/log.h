@@ -5,12 +5,18 @@
  *
  * Levels:  ERR > WRN > INF > DBG
  *
- * Build with -DSNAPPY_DEBUG to enable DBG output.
+ * Verbosity (runtime, set via --verbose / -V):
+ *   0 (default) — only ERR and WRN are printed.
+ *   1 (-V)      — ERR, WRN, and INF are printed.
+ *   2 (-VV)     — all levels including DBG are printed.
  */
 #ifndef SNAPPY_LOG_H
 #define SNAPPY_LOG_H
 
 #include <stdio.h>
+
+/* Global verbosity level — defined in main.c */
+extern int g_verbose;
 
 #define LOG_ERR(...) \
     fprintf(stderr, "[snappydock-d] ERROR: " __VA_ARGS__), \
@@ -20,16 +26,18 @@
     fprintf(stderr, "[snappydock-d] WARN:  " __VA_ARGS__), \
     fprintf(stderr, "\n")
 
-#define LOG_INF(...) \
-    fprintf(stderr, "[snappydock-d] INFO:  " __VA_ARGS__), \
-    fprintf(stderr, "\n")
+#define LOG_INF(...) do { \
+    if (g_verbose >= 1) { \
+        fprintf(stderr, "[snappydock-d] INFO:  " __VA_ARGS__); \
+        fprintf(stderr, "\n"); \
+    } \
+} while (0)
 
-#ifdef SNAPPY_DEBUG
-#define LOG_DBG(...) \
-    fprintf(stderr, "[snappydock-d] DEBUG: " __VA_ARGS__), \
-    fprintf(stderr, "\n")
-#else
-#define LOG_DBG(...) ((void)0)
-#endif
+#define LOG_DBG(...) do { \
+    if (g_verbose >= 2) { \
+        fprintf(stderr, "[snappydock-d] DEBUG: " __VA_ARGS__); \
+        fprintf(stderr, "\n"); \
+    } \
+} while (0)
 
 #endif /* SNAPPY_LOG_H */

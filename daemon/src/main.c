@@ -42,6 +42,10 @@
 #include <unistd.h>
 #include <limits.h>
 
+/* ── Global verbosity (see log.h) ────────────────────────────────────── */
+
+int g_verbose = 0;
+
 /* ── Signal handling ─────────────────────────────────────────────────── */
 
 static volatile sig_atomic_t s_running = 1;
@@ -134,6 +138,20 @@ int main(int argc, char **argv)
 {
     /* ── Line-buffer stdout for JSON protocol ────────────────────────── */
     setvbuf(stdout, NULL, _IOLBF, 0);
+
+    /* ── Parse verbosity flags before anything else ──────────────────── */
+    /* Check env var first (set by snappy-dock wrapper script) */
+    const char *verbose_env = getenv("SNAPPY_DOCK_VERBOSE");
+    if (verbose_env && *verbose_env)
+        g_verbose = atoi(verbose_env);
+    /* CLI flags can further increase verbosity */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-V") == 0) {
+            g_verbose++;
+        } else if (strcmp(argv[i], "-VV") == 0) {
+            g_verbose = 2;
+        }
+    }
 
     /* ── Signal handlers ─────────────────────────────────────────────── */
     signal(SIGINT,  on_signal);

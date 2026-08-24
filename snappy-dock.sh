@@ -2,13 +2,14 @@
 # snappy-dock — launcher/controller for snappydock-d + QuickShell
 #
 # Usage:
-#   snappy-dock            Start the dock
-#   snappy-dock --kill     Kill running instance
-#   snappy-dock --restart  Restart (kill + start)
-#   snappy-dock --status   Check if running
-#   snappy-dock --config   Print config file path
-#   snappy-dock --version  Print version
-#   snappy-dock --help     This message
+#   snappy-dock              Start the dock
+#   snappy-dock --kill       Kill running instance
+#   snappy-dock --restart    Restart (kill + start)
+#   snappy-dock --status     Check if running
+#   snappy-dock --config     Print config file path
+#   snappy-dock --verbose    Start with verbose logging (repeat for debug)
+#   snappy-dock --version    Print version
+#   snappy-dock --help       This message
 
 VERSION="0.1.0"
 APP_NAME="snappy-dock"
@@ -154,7 +155,37 @@ do_start() {
 }
 
 # ── Main ────────────────────────────────────────────────────────────
-case "${1:-}" in
+
+# Parse all arguments — extract verbose flags and the primary action
+VERBOSE_LEVEL=0
+ACTION=""
+
+for arg in "$@"; do
+    case "$arg" in
+    --verbose | -V)
+        VERBOSE_LEVEL=$((VERBOSE_LEVEL + 1))
+        ;;
+    -VV)
+        VERBOSE_LEVEL=2
+        ;;
+    *)
+        if [ -z "$ACTION" ]; then
+            ACTION="$arg"
+        else
+            echo "$APP_NAME: unexpected argument '$arg'" >&2
+            echo "Run '$APP_NAME --help' for usage." >&2
+            exit 1
+        fi
+        ;;
+    esac
+done
+
+# Export verbose level for the daemon to inherit
+if [ "$VERBOSE_LEVEL" -gt 0 ]; then
+    export SNAPPY_DOCK_VERBOSE="$VERBOSE_LEVEL"
+fi
+
+case "${ACTION:-}" in
 --kill | -k)
     do_kill
     ;;
@@ -186,16 +217,24 @@ case "${1:-}" in
 $APP_NAME $VERSION — lightweight Hyprland dock
 
 USAGE:
-    snappy-dock              Start the dock
-    snappy-dock --kill       Kill running instance
-    snappy-dock --restart    Restart (kill + start)
-    snappy-dock --status     Check if running
-    snappy-dock --config     Show config file paths
-    snappy-dock --version    Print version
-    snappy-dock --help       This message
+    snappy-dock                  Start the dock
+    snappy-dock --kill           Kill running instance
+    snappy-dock --restart        Restart (kill + start)
+    snappy-dock --status         Check if running
+    snappy-dock --config         Show config file paths
+    snappy-dock --verbose (-V)   Enable info logging (repeat for debug)
+    snappy-dock --version        Print version
+    snappy-dock --help           This message
+
+FLAGS:
+    --verbose can be combined with other commands:
+        snappy-dock --restart --verbose
+        snappy-dock -V -V   (debug level)
+        snappy-dock -VV     (debug level, shorthand)
 
 ENVIRONMENT:
-    SNAPPY_DOCK_SHELL        Override shell directory path
+    SNAPPY_DOCK_SHELL            Override shell directory path
+    SNAPPY_DOCK_VERBOSE          Set verbosity (1=info, 2=debug)
 
 CONFIG:
     $(config_dir)/config.ini     Dock settings (INI format)
@@ -206,7 +245,7 @@ EOF
     do_start
     ;;
 *)
-    echo "$APP_NAME: unknown option '$1'" >&2
+    echo "$APP_NAME: unknown option '$ACTION'" >&2
     echo "Run '$APP_NAME --help' for usage." >&2
     exit 1
     ;;

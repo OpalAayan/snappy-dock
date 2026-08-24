@@ -10,6 +10,9 @@
 #include <string.h>
 #include <json-c/json.h>
 
+/* ── Verbose flag (see log.h) ────────────────────────────────────────── */
+int g_verbose = 0;
+
 /* ── hypr_ipc stubs ──────────────────────────────────────────────────── */
 
 int hypr_ipc_init(void)                    { return -1; }

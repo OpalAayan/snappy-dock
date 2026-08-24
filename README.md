@@ -28,6 +28,9 @@ The dock is meant to stay simple: quick to build, easy to configure, and easy to
 - Includes a launcher button. By default it runs `fuzzel`.
 - Resolves app icons from desktop files and icon themes.
 - Reads an INI config file from `~/.config/snappy-dock/config.ini`.
+- Config validation: invalid values are caught with a warning and replaced by safe defaults.
+- Live config reload via inotify (no restart needed for most changes).
+- Verbose logging (`--verbose`) for debugging.
 
 ## Requirements
 
@@ -117,19 +120,44 @@ Restart it after installing changes:
 snappy-dock --restart
 ```
 
-Useful wrapper commands:
+All wrapper commands:
 
 ```sh
-snappy-dock --status
-snappy-dock --kill
-snappy-dock --config
-snappy-dock --help
+snappy-dock                  # Start the dock
+snappy-dock --restart        # Kill + start
+snappy-dock --kill           # Stop the dock
+snappy-dock --status         # Check if running
+snappy-dock --config         # Print config file paths
+snappy-dock --verbose        # Start with info-level logging
+snappy-dock --restart -V     # Restart with info logging
+snappy-dock -VV              # Start with full debug logging
+snappy-dock --version        # Print version
+snappy-dock --help           # Show usage
 ```
+
+`--verbose` / `-V` can be combined with any action like `--restart`. Repeat it (`-V -V` or `-VV`) for debug-level output.
+
+You can also set verbosity via environment variable:
+
+```sh
+SNAPPY_DOCK_VERBOSE=1 snappy-dock          # info
+SNAPPY_DOCK_VERBOSE=2 snappy-dock          # debug
+```
+
+By default (no flag), only errors and warnings are printed. This keeps stderr clean during normal use.
 
 Run from the source tree without installing:
 
 ```sh
 quickshell -p shell
+```
+
+### Auto-start with Hyprland
+
+Add to your `hyprland.conf`:
+
+```ini
+exec-once = snappy-dock
 ```
 
 ## Configuration
@@ -174,36 +202,77 @@ The daemon watches the config file and can send updates to the shell while runni
 
 See [config/config.ini.example](config/config.ini.example) for all settings and plain-language notes.
 
-Common config keys:
+### Config validation
 
-| Key | What it controls |
-| --- | --- |
-| `Position` | Dock edge: `bottom`, `top`, `left`, or `right` |
-| `Alignment` | Placement along the edge: `center`, `start`, or `end` |
-| `FullWidth` | Whether to stretch the dock window across the whole screen width |
-| `Mode` | Dock animation mode: `static` or `snappy` (macOS-style magnification) |
-| `RiseSpacing` | How much magnified icons push neighbors apart in snappy mode (0.0 to 2.0) |
-| `[Icons] IconSize` | Icon size in pixels |
-| `[Icons] Theme` | Qt icon theme name, for example `Tela-dracula` |
-| `[Icons] Fallback` | Icon used when a themed app icon is missing |
-| `IconHoverBg` | Show hover background for dock icons (`true`/`false`) |
-| `Layer` | Wayland layer: `background`, `bottom`, `top`, or `overlay` |
-| `ExclusiveZone` | How many pixels are reserved for the dock, or `auto` to detect the dock height |
-| `AutoHide` | Whether the dock hides after the pointer leaves |
-| `HotspotDelay` | Delay (ms) before the dock hides after cursor leaves |
-| `LauncherCmd` | Command run by the launcher button |
-| `LauncherPos` | Launcher button position: `start`, `end`, or `none` |
-| `LauncherIcon` | Icon or text for the launcher (default `dots`) |
-| `LauncherIconSize` | Size of the launcher icon (`0` for auto) |
-| `LauncherHoverBg` | Show hover background for the launcher (`true`/`false`) |
-| `LauncherHoverBgSize` | Size of the hover background (`0` for auto) |
-| `WorkspaceCount` | Workspaces shown in the right-click move menu |
-| `[Margins]` | Extra edge spacing |
-| `[Font] Family` | Font family used for text (e.g. `Sans`, `FiraCode Nerd Font`) |
-| `[Font] Weight` | Font weight (e.g. `Normal`, `Bold`) |
+The daemon validates all enum-type config values on load. If you set something invalid, it warns and falls back to the default:
+
+```
+[snappydock-d] WARN:  Invalid Alignment='bottom' (expected: center, start, end), falling back to 'center'
+```
+
+Numeric values are also range-checked (e.g. `IconSize` must be 8–256, `Spread` must be 1–6).
+
+These warnings always print regardless of `--verbose`. You do not need verbose mode to see config errors.
+
+### `[Dock]` section
+
+| Key | Values | Default | Notes |
+| --- | --- | --- | --- |
+| `Position` | `bottom`, `top`, `left`, `right` | `bottom` | Screen edge for the dock. |
+| `Alignment` | `center`, `start`, `end` | `center` | Position along the edge. For top/bottom: start=left, end=right. For left/right: start=top, end=bottom. |
+| `Layer` | `background`, `bottom`, `top`, `overlay` | `top` | Wayland layer-shell layer. See warning below. |
+| `FullWidth` | `true`, `false` | `false` | Stretch the dock window across the full screen edge. |
+| `ExclusiveZone` | `0`, `auto`, or pixel count | `0` | Reserve screen space. See warning below. |
+| `AutoHide` | `true`, `false` | `false` | Hide dock when pointer leaves. See note below. |
+| `HotspotDelay` | `0`–`5000` (ms) | `300` | Delay before hiding after pointer leaves. |
+| `Mode` | `static`, `snappy` | `static` | `snappy` enables macOS-style magnification. |
+| `Magnification` | `0.0`–`2.0` | `0.78` | Scale boost on hover (snappy only). `0.78` = 1.78x peak. |
+| `Spread` | `1`–`6` | `3` | Neighbor influence radius in icon widths (snappy only). |
+| `IconSpacing` | `0`+ (px) | `2` | Gap between icon cells. |
+| `RiseSpacing` | `0.0`–`2.0` | `0.5` | How much magnified icons push neighbors apart (snappy only). |
+| `LauncherCmd` | any command | `fuzzel` | App launcher command. |
+| `LauncherPos` | `start`, `end`, `none` | `start` | Launcher button placement. `none` hides it entirely. |
+| `LauncherIcon` | `dots` or any string | `dots` | `dots` renders a 9-dot grid. Any other string is rendered as a font glyph (e.g. Nerd Font symbols). |
+| `LauncherIconSize` | `0`+ (px) | `0` | Custom launcher icon size. `0` = auto-scale to match `IconSize`. |
+| `LauncherHoverBg` | `true`, `false` | `true` | Show background highlight on launcher hover. |
+| `LauncherHoverBgSize` | `0`+ (px) | `0` | Custom hover background size. `0` = auto. |
+| `IconHoverBg` | `true`, `false` | `true` | Show background highlight on dock icon hover. |
+| `WorkspaceCount` | `1`–`20` | `5` | Workspaces shown in right-click "Move to workspace" menu. |
 
 > [!IMPORTANT]
-> **Snappy Mode Constraints:** When using `Mode=snappy`, `ExclusiveZone=auto` does not work reliably due to dynamic geometry changes. You must set `ExclusiveZone` manually to a fixed pixel value (e.g., `48`). It is also highly recommended to use `Layer=overlay` in snappy mode to prevent the compositor from clipping magnified icons.
+> **ExclusiveZone in snappy mode:** `ExclusiveZone=auto` does **not** work in snappy mode because the dock geometry changes dynamically during magnification. You must set a fixed pixel value (e.g. `ExclusiveZone=48`) or leave it at `0`.
+
+> [!WARNING]
+> **Layer + ExclusiveZone in snappy mode:** When using `Mode=snappy` with `ExclusiveZone`, use `Layer=overlay`. Lower layers may cause the compositor to clip magnified icons that extend beyond the reserved zone.
+
+> [!NOTE]
+> **AutoHide + ExclusiveZone:** Using both together is not recommended. The reserved space remains even when the dock is hidden, leaving a dead zone on screen. It does work, but is visually odd.
+
+### `[Icons]` section
+
+| Key | Values | Default | Notes |
+| --- | --- | --- | --- |
+| `IconSize` | `8`–`256` (px) | `48` | Base icon size. Common: 32, 40, 48, 56, 64. |
+| `Theme` / `IconTheme` | theme name or empty | `""` (system) | Qt icon theme (e.g. `Tela-dracula`, `Papirus`). |
+| `Fallback` / `FallbackIcon` | icon name | `application-x-executable` | Used when an app icon can't be found. |
+
+### `[Margins]` section
+
+Extra spacing between the dock and screen edges, in pixels.
+
+| Key | Default |
+| --- | --- |
+| `Top` | `0` |
+| `Bottom` | `5` |
+| `Left` | `0` |
+| `Right` | `0` |
+
+### `[Font]` section
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `Family` | Font family name | `Sans` |
+| `Weight` | `Normal`, `Bold`, `Light`, `Medium`, `SemiBold` | `Bold` |
 
 ## Pinned Apps
 
@@ -243,6 +312,7 @@ shell/                    QuickShell/QML frontend
 config/config.ini.example Example config file
 snappy-dock.sh            Installed wrapper script
 meson.build               Build and install rules
+Makefile                  Alternative build system
 ```
 
 ## Troubleshooting
@@ -275,6 +345,16 @@ sudo meson install -C build
 snappy-dock --restart
 ```
 
+### Config values are being ignored
+
+Run with `--verbose` to see what the daemon loaded:
+
+```sh
+snappy-dock --restart --verbose
+```
+
+If a config value is invalid, you will see a `WARN` line with the expected values and what it fell back to.
+
 ### Icons are missing
 
 Make sure the app has a `.desktop` file in one of the normal application directories, such as:
@@ -302,7 +382,11 @@ Make sure Snappy Dock is started inside a Hyprland session. The daemon needs Hyp
 
 ## Roadmap / Future TODOs
 
-- **FullWidth Taskbar Integration**: Currently `FullWidth` stretches the dock, but the UI items remain centered. A future update will make `FullWidth` expand the entire bar into a traditional taskbar layout, automatically adjusting and fitting items along the full length.
+- **Refined Alignment on Floating Docks**: Continuous polishing for `Position=left`/`right` edge-anchoring with `FullWidth=false` to ensure `Alignment=start` and `Alignment=end` are completely seamless across all multi-monitor setups, aspect ratios, and scaling factors.
+- **Automatic Font Weight Hierarchy**: Contextual typography (automatically bolding the active focused window while keeping context menus and passive labels at regular weight).
+- **Multi-Monitor Assignment**: Per-output configuration options and independent multi-monitor dock placement.
+- **FullWidth Layout Presets**: Extended layout modes when `FullWidth=true` (such as keeping launcher pinned to the screen corner while centering the running app group).
+- **Dynamic ExclusiveZone with Magnification**: Investigating compositor-safe fixed bounding boxes to allow `ExclusiveZone` reservation without clipping snappy mode magnification.
 
 ## License
 

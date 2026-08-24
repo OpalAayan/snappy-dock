@@ -18,8 +18,6 @@
 # The dock reads this file through snappydock-d and applies it in QML.
 
 [Dock]
-
-# Where the dock should live.
 # Values: bottom, top, left, right.
 Position=bottom
 
@@ -32,22 +30,26 @@ Alignment=center
 # Layer-shell layer.
 # Higher layers appear above more windows.
 # Values: background, bottom, top, overlay.
-# IMPORTANT: If Mode=snappy, it is highly recommended to use Layer=overlay.
-Layer=overlay
+# IMPORTANT: If Mode=snappy, it is highly recommended to use Layer=overlay
+#            when using ExclusiveZone, otherwise fine.
+Layer=top
 
 # Stretch the dock window across the whole screen width.
 # For left/right docks, this stretches across the full screen height.
 FullWidth=false
 
 # Reserve screen space for the dock.
-# 0 or off: do not reserve space.
-# auto: let the compositor decide.
+# 0 or off: do not reserve space (floating overlay).
+# auto: let the compositor calculate automatically (static mode only).
 # Any number: reserve that many pixels.
-# IMPORTANT: When Mode=snappy, 'auto' only works for static mode. You MUST set this manually (e.g., ExclusiveZone=48).
+# IMPORTANT: ExclusiveZone=auto does NOT work in snappy mode due to dynamic
+#            geometry changes. Set a fixed pixel value (e.g. ExclusiveZone=48).
 ExclusiveZone=0
 
 # Hide the dock when it is not hovered.
-AutoHide=false
+# NOTE: Using AutoHide together with ExclusiveZone is not recommended
+#       (the reserved space stays even when the dock is hidden), but it works.
+AutoHide=true
 
 # Command run by the launcher button.
 # Examples:
@@ -58,6 +60,8 @@ LauncherCmd=fuzzel
 
 # Where to place the launcher button.
 # Values: start, end, none.
+# none = no place dont render 
+# tip : pair this with Alignment start and end when FullWidth = true 
 LauncherPos=start
 
 # Text or icon for the launcher button.
@@ -71,11 +75,12 @@ LauncherIcon=dots
 LauncherIconSize=0
 
 # Show a hover background for the launcher icon.
-LauncherHoverBg=true
+LauncherHoverBg=false
 
 # Size of the launcher hover background.
 # 0 means scale automatically based on IconSize and padding.
 LauncherHoverBgSize=0
+
 
 # Show a hover background for dock icons.
 # When true, hovering over a dock icon shows a subtle background highlight.
@@ -90,49 +95,50 @@ WorkspaceCount=5
 # Lower values = dock disappears faster (more like macOS).
 # 0 means hide instantly when the cursor leaves.
 # Default: 300 (ms).
-HotspotDelay=300
+HotspotDelay=800
 
 # Dock animation mode.
 # static  — fixed-size icons (default).
 # snappy  — macOS-style magnification: icons grow under the cursor
 #            and push neighbors sideways.
-Mode=static
+Mode=snappy
 
 # Magnification scale boost for snappy mode.
 # 0.0 means no magnification (icons don't grow).
 # 0.78 is the default (1.78x peak scale).
 # Maximum is 2.0 (3x peak scale).
 # Has no effect in static mode.
-Magnification=0.78
+Magnification=1
 
 # How many neighboring icons are visually affected by magnification.
 # Range: 1–6.  1 = only the hovered icon grows.
 # 3 (default) = the hovered icon plus ~2 neighbors on each side.
 # Higher values produce a wider, gentler curve.
 # Has no effect in static mode.
-Spread=3
+Spread=2
 
 # Gap between icon cells in the dock, in pixels.
 # Applies to both static and snappy modes.
 # 0 means icons touch with no gap.
-IconSpacing=2
+IconSpacing=3
 
 # How much magnified icons push neighbors apart in snappy mode.
 # 0 means no separation (icons can overlap as they grow).
 # 0.5 (default) gives moderate breathing room.
 # 1.0 fully preserves the original gap between scaled icons (macOS feel).
 # Has no effect in static mode.
-RiseSpacing=0.5
+RiseSpacing=1
+
 
 [Icons]
 
 # Icon size in pixels.
 # Good values: 32, 40, 48, 56, 64.
-IconSize=48
+IconSize=32.5
 
 # Qt icon theme name. Use default or leave empty for the system theme.
 # Example: Tela-dracula
-Theme=default
+Theme=Tela-dracula
 
 # Icon name used when an app icon cannot be found in the theme.
 Fallback=application-x-executable
@@ -141,7 +147,7 @@ Fallback=application-x-executable
 
 # Extra space between the dock and each screen edge, in pixels.
 Top=0
-Bottom=5
+Bottom=0
 Left=0
 Right=0
 
@@ -149,7 +155,8 @@ Right=0
 
 # Font family for all text
 # Examples: Sans, Inter, Roboto, JetBrainsMono Nerd Font, FiraCode Nerd Font etc.
-Family=Sans
+Family=Rubik
 
 # Font weight: Normal, Bold, Light, Medium, SemiBold
 Weight=Bold
+

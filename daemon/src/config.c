@@ -251,29 +251,70 @@ static void config_parse_cli(DockConfig *cfg, int *argc, char ***argv)
 /* ── Validation ──────────────────────────────────────────────────────── */
 
 /*
- * Normalise the mode field to a known value.
- * Accepts "static" or "snappy" (case-insensitive).
- * Any unrecognised value → warning + fallback to "static".
+ * Generic enum-string validator.
+ * Lowercases `*field` in-place, checks against a NULL-terminated
+ * list of allowed values.  On mismatch → warn + replace with fallback.
  */
-static void validate_mode(DockConfig *cfg)
+static void validate_enum(char **field, const char *key,
+                          const char *const *allowed, const char *fallback)
 {
-    if (!cfg->mode || !cfg->mode[0]) {
-        free(cfg->mode);
-        cfg->mode = strdup("static");
+    if (!*field || !(*field)[0]) {
+        free(*field);
+        *field = strdup(fallback);
         return;
     }
 
-    /* Lowercase in-place for comparison */
-    for (char *p = cfg->mode; *p; p++)
+    /* Lowercase in-place */
+    for (char *p = *field; *p; p++)
         *p = (char)tolower((unsigned char)*p);
 
-    if (strcmp(cfg->mode, "static") == 0 ||
-        strcmp(cfg->mode, "snappy") == 0)
-        return;   /* valid */
+    for (const char *const *a = allowed; *a; a++) {
+        if (strcmp(*field, *a) == 0)
+            return;   /* valid */
+    }
 
-    LOG_WRN("Unknown mode '%s', falling back to 'static'", cfg->mode);
-    free(cfg->mode);
-    cfg->mode = strdup("static");
+    /* Build "val1, val2, val3" string for the warning */
+    char expected[256] = "";
+    for (const char *const *a = allowed; *a; a++) {
+        if (expected[0]) strncat(expected, ", ", sizeof(expected) - strlen(expected) - 1);
+        strncat(expected, *a, sizeof(expected) - strlen(expected) - 1);
+    }
+
+    LOG_WRN("Invalid %s='%s' (expected: %s), falling back to '%s'",
+            key, *field, expected, fallback);
+    free(*field);
+    *field = strdup(fallback);
+}
+
+/*
+ * Validate and clamp a numeric field to [lo, hi].
+ */
+static void validate_int_range(int *field, const char *key, int lo, int hi, int fallback)
+{
+    if (*field < lo || *field > hi) {
+        LOG_WRN("Invalid %s=%d (expected: %d–%d), falling back to %d",
+                key, *field, lo, hi, fallback);
+        *field = fallback;
+    }
+}
+
+static void config_validate(DockConfig *cfg)
+{
+    static const char *const positions[]   = {"bottom", "top", "left", "right", NULL};
+    static const char *const alignments[]  = {"center", "start", "end", NULL};
+    static const char *const layers[]      = {"background", "bottom", "top", "overlay", NULL};
+    static const char *const launcher_pos[]= {"start", "end", "none", NULL};
+    static const char *const modes[]       = {"static", "snappy", NULL};
+
+    validate_enum(&cfg->position,     "Position",    positions,    "bottom");
+    validate_enum(&cfg->alignment,    "Alignment",   alignments,   "center");
+    validate_enum(&cfg->layer,        "Layer",       layers,       "top");
+    validate_enum(&cfg->launcher_pos, "LauncherPos", launcher_pos, "start");
+    validate_enum(&cfg->mode,         "Mode",        modes,        "static");
+
+    validate_int_range(&cfg->icon_size,        "IconSize",       8, 256, 48);
+    validate_int_range(&cfg->workspace_count,  "WorkspaceCount", 1, 20,  5);
+    validate_int_range(&cfg->hotspot_delay,    "HotspotDelay",   0, 5000, 300);
 }
 
 /* ── Public API ──────────────────────────────────────────────────────── */
@@ -301,7 +342,7 @@ void config_parse(int *argc, char ***argv)
         config_parse_cli(&s_cfg, argc, argv);
 
     /* Post-parse validation */
-    validate_mode(&s_cfg);
+    config_validate(&s_cfg);
 }
 
 const DockConfig *config_get(void)
@@ -356,5 +397,5 @@ void config_apply_ini_key_for_test(DockConfig *cfg, const char *section,
 
 void config_validate_mode_for_test(DockConfig *cfg)
 {
-    validate_mode(cfg);
+    config_validate(cfg);
 }
