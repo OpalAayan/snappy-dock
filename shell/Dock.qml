@@ -85,7 +85,7 @@ Scope {
             readonly property int visibleItemCount: displayItems.length
             readonly property int itemExtent:    Theme.iconSize + Theme.itemPadding * 2
             readonly property int indicatorGap: 4
-            readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
+            readonly property int sideIndicatorWidth: Theme.dotSize
             readonly property int dockItemWidth: {
                 switch (dockPosition) {
                     case "left":
@@ -510,11 +510,13 @@ Scope {
                 /* ── Precise input surface: follows dockLayout geometry ─ */
                 Item {
                     id: iconHitArea
-                    /* Track the Grid's position + some overflow margin */
-                    x: dockLayout.x - (screenScope.snappyMainOverflow / 2) - 8
-                    y: screenScope.isBottom
-                       ? (parent.height - screenScope.dockBaseHeight - screenScope.snappyHeadroom - screenScope.edgePadding)
-                       : (screenScope.isTop ? 0 : dockLayout.y - 8)
+                    /* Track the Grid's position + overflow margin for snappy mode */
+                    x: screenScope.isHorizontal
+                       ? (dockLayout.x - (screenScope.snappyMainOverflow / 2) - 8)
+                       : (screenScope.isRight ? (parent.width - width) : 0)
+                    y: screenScope.isVertical
+                       ? (dockLayout.y - (screenScope.snappyMainOverflow / 2) - 8)
+                       : (screenScope.isBottom ? (parent.height - height) : 0)
                     width:  screenScope.isHorizontal
                             ? (dockLayout.implicitWidth + screenScope.snappyMainOverflow + 16)
                             : parent.width
@@ -550,26 +552,31 @@ Scope {
                             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
                         }
 
-                        /* Anchor to the screen edge */
-                        anchors.bottom:       screenScope.isBottom ? parent.bottom : undefined
-                        anchors.bottomMargin: screenScope.isBottom ? screenScope.edgePadding : 0
-                        anchors.top:          screenScope.isTop    ? parent.top    : undefined
-                        anchors.topMargin:    screenScope.isTop    ? screenScope.edgePadding : 0
-                        anchors.left:         screenScope.isLeft   ? parent.left   : undefined
-                        anchors.leftMargin:   screenScope.isLeft   ? screenScope.edgePadding : 0
-                        anchors.right:        screenScope.isRight  ? parent.right  : undefined
-                        anchors.rightMargin:  screenScope.isRight  ? screenScope.edgePadding : 0
-
-                        /* Center on the main axis */
-                        anchors.horizontalCenter: screenScope.isHorizontal ? parent.horizontalCenter : undefined
-                        anchors.verticalCenter:   screenScope.isVertical   ? parent.verticalCenter   : undefined
-
+                        /* Size */
                         width:  screenScope.isVertical
                                 ? screenScope.dockBaseWidth
                                 : (screenScope.fullWidth ? parent.width : screenScope.dockBaseWidth + _riseW)
                         height: screenScope.isHorizontal
                                 ? screenScope.dockBaseHeight
                                 : (screenScope.fullWidth ? parent.height : screenScope.dockBaseHeight + _riseH)
+
+                        /* Position: pure x/y, no anchors to avoid conflicts */
+                        x: {
+                            var pw = parent ? parent.width : 0;
+                            var edgePad = screenScope.edgePadding;
+                            if (screenScope.isLeft)   return edgePad;
+                            if (screenScope.isRight)  return pw - width - edgePad;
+                            if (screenScope.fullWidth) return 0;
+                            return (pw - width) / 2;
+                        }
+                        y: {
+                            var ph = parent ? parent.height : 0;
+                            var edgePad = screenScope.edgePadding;
+                            if (screenScope.isTop)    return edgePad;
+                            if (screenScope.isBottom) return ph - height - edgePad;
+                            if (screenScope.fullWidth) return 0;
+                            return (ph - height) / 2;
+                        }
 
                         radius: screenScope.fullWidth ? 0 : Theme.dockRadius
                         color:  Theme.bgColor
@@ -583,40 +590,43 @@ Scope {
                         width:  implicitWidth
                         height: implicitHeight
 
-                        /* ── Cross-axis: anchor to the dock's screen edge ── */
-                        anchors.bottom:       screenScope.isBottom ? parent.bottom : undefined
-                        anchors.bottomMargin: screenScope.isBottom ? (Theme.dockPadding + screenScope.edgePadding) : 0
-                        anchors.top:          screenScope.isTop    ? parent.top    : undefined
-                        anchors.topMargin:    screenScope.isTop    ? (Theme.dockPadding + screenScope.edgePadding) : 0
-                        anchors.left:         screenScope.isLeft   ? parent.left   : undefined
-                        anchors.leftMargin:   screenScope.isLeft   ? (Theme.dockPadding + screenScope.edgePadding) : 0
-                        anchors.right:        screenScope.isRight  ? parent.right  : undefined
-                        anchors.rightMargin:  screenScope.isRight  ? (Theme.dockPadding + screenScope.edgePadding) : 0
-
-                        /* ── Main-axis: position icons along the bar ─────── */
-                        /* For horizontal docks (top/bottom): compute x
-                           For vertical docks (left/right): compute y
-                           This replaces the old mess of conditional anchors
-                           that broke Alignment=end + FullWidth=true.         */
-
-                        /* Vertical centering for left/right docks */
-                        anchors.verticalCenter: screenScope.isVertical ? parent.verticalCenter : undefined
-
-                        /* Horizontal position for top/bottom docks */
+                        /* ── Position: pure x/y bindings, no anchors ─────── */
+                        /* QML anchor conflicts silently break manual positioning.
+                           Use explicit math for both axes on all 4 positions.
+                           Cross-axis = dock edge side. Main-axis = along the bar. */
                         x: {
-                            if (screenScope.isVertical) return 0;  /* handled by left/right anchors */
                             var pw = parent ? parent.width : 0;
                             var gw = implicitWidth;
-                            var pad = Theme.dockPadding + 16;
+                            var edgePad = Theme.dockPadding + screenScope.edgePadding;
+                            var alignPad = Theme.dockPadding + 16;
+                            /* Cross-axis for left/right docks */
+                            if (screenScope.isLeft)   return edgePad;
+                            if (screenScope.isRight)  return pw - gw - edgePad;
+                            /* Main-axis for top/bottom docks */
                             if (screenScope.fullWidth) {
                                 if (screenScope.alignStart)
-                                    return Math.max(screenScope.marginLeft, 0) + pad;
+                                    return Math.max(screenScope.marginLeft, 0) + alignPad;
                                 if (screenScope.alignEnd)
-                                    return pw - gw - Math.max(screenScope.marginRight, 0) - pad;
-                                return (pw - gw) / 2;  /* center */
+                                    return pw - gw - Math.max(screenScope.marginRight, 0) - alignPad;
                             }
-                            /* Non-fullWidth: panel is already sized to content, center the grid */
                             return (pw - gw) / 2;
+                        }
+                        y: {
+                            var ph = parent ? parent.height : 0;
+                            var gh = implicitHeight;
+                            var edgePad = Theme.dockPadding + screenScope.edgePadding;
+                            var alignPad = Theme.dockPadding + 16;
+                            /* Cross-axis for top/bottom docks */
+                            if (screenScope.isBottom) return ph - gh - edgePad;
+                            if (screenScope.isTop)    return edgePad;
+                            /* Main-axis for left/right docks */
+                            if (screenScope.fullWidth) {
+                                if (screenScope.alignStart)
+                                    return Math.max(screenScope.marginTop, 0) + alignPad;
+                                if (screenScope.alignEnd)
+                                    return ph - gh - Math.max(screenScope.marginBottom, 0) - alignPad;
+                            }
+                            return (ph - gh) / 2;
                         }
 
                         columns: screenScope.isVertical ? 1 : Math.max(1, screenScope.displayItems.length)

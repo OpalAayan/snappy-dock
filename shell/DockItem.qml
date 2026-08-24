@@ -52,7 +52,7 @@ Item {
     property bool isTop: dockPosition === "top"
     property bool isVertical: isLeft || isRight
     readonly property int indicatorGap: 4
-    readonly property int sideIndicatorWidth: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
+    readonly property int sideIndicatorWidth: Theme.dotSize
 
     /* Fixed implicit sizes keep the dock from shifting while icons animate.
        Each position computes independently — no shared isVertical ternary. */

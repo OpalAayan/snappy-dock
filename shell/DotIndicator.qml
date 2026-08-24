@@ -31,7 +31,7 @@ Item {
     readonly property real baseSize: Theme.dotSize
     readonly property real overflowSize: Math.max(2, Theme.dotSize - 1)
     readonly property real horizontalActiveLength: Theme.dotActiveWidth
-    readonly property real sideActiveLength: Math.max(Theme.dotSize * 2, Theme.dotActiveWidth - 4)
+    readonly property real sideActiveLength: Theme.dotActiveWidth
     readonly property real sideSpacing: Math.max(2, Theme.dotSpacing - 1)
 
     implicitWidth: sideDock ? sideStack.implicitWidth : bottomRow.implicitWidth
@@ -107,29 +107,25 @@ Item {
                 required property int index
 
                 readonly property bool isSmall: root.count >= 3 && index === 2
-                readonly property real markWidth: isSmall ? root.overflowSize
+                readonly property real markWidth: isSmall ? root.overflowSize : root.baseSize
+                readonly property real markHeight: isSmall ? root.overflowSize
                                              : root.active ? root.sideActiveLength
                                              : root.baseSize
-                readonly property real markHeight: isSmall ? root.overflowSize : root.baseSize
 
-                width: root.sideActiveLength
-                height: root.baseSize
+                width: root.baseSize
+                height: markHeight
 
                 Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: root.edge === "right" ? parent.left : undefined
-                    anchors.right: root.edge === "left" ? parent.right : undefined
-                    anchors.horizontalCenter: root.edge === "left" || root.edge === "right"
-                                              ? undefined : parent.horizontalCenter
+                    anchors.centerIn: parent
                     width: parent.markWidth
                     height: parent.markHeight
-                    radius: height / 2
+                    radius: width / 2
                     color: parent.isSmall ? Theme.dotSmall
                          : root.active ? Theme.dotActive
                          : Theme.dotRunning
                     opacity: parent.isSmall ? 0.6 : 1.0
 
-                    Behavior on width {
+                    Behavior on height {
                         NumberAnimation { duration: Theme.animDuration; easing.type: Easing.OutCubic }
                     }
                     Behavior on color {
