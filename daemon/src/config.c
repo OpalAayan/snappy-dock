@@ -139,12 +139,24 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
         } else if (str_eq_ci(key, "FullWidth")) {
             cfg->full_width = parse_bool(val);
         } else if (str_eq_ci(key, "ExclusiveZone")) {
-            if (str_eq_ci(val, "auto"))
-                cfg->exclusive_zone = -1;
-            else if (str_eq_ci(val, "false") || str_eq_ci(val, "off"))
+            if (str_eq_ci(val, "true") || str_eq_ci(val, "yes") || str_eq_ci(val, "1")) {
+                if (cfg->exclusive_zone == 0)
+                    cfg->exclusive_zone = -1; /* default to auto when enabled */
+            } else if (str_eq_ci(val, "false") || str_eq_ci(val, "no") || str_eq_ci(val, "off")) {
                 cfg->exclusive_zone = 0;
-            else
+            } else if (str_eq_ci(val, "auto")) {
+                cfg->exclusive_zone = -1;
+            } else {
                 cfg->exclusive_zone = atoi(val);
+            }
+        } else if (str_eq_ci(key, "ExclusiveZoneValue")) {
+            if (str_eq_ci(val, "auto") || atoi(val) <= 0) {
+                if (cfg->exclusive_zone != 0)
+                    cfg->exclusive_zone = -1; /* auto */
+            } else {
+                if (cfg->exclusive_zone != 0)
+                    cfg->exclusive_zone = atoi(val);
+            }
         } else if (str_eq_ci(key, "AutoHide")) {
             cfg->autohide = parse_bool(val);
         } else if (str_eq_ci(key, "LauncherCmd")) {

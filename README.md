@@ -223,7 +223,8 @@ These warnings always print regardless of `--verbose`. You do not need verbose m
 | `Alignment` | `center`, `start`, `end` | `center` | Position along the edge. For top/bottom: start=left, end=right. For left/right: start=top, end=bottom. |
 | `Layer` | `background`, `bottom`, `top`, `overlay` | `top` | Wayland layer-shell layer. See warning below. |
 | `FullWidth` | `true`, `false` | `false` | Stretch the dock window across the full screen edge. |
-| `ExclusiveZone` | `0`, `auto`, or pixel count | `0` | Reserve screen space. See warning below. |
+| `ExclusiveZone` | `true`, `false` (or px count/`auto`) | `false` | Enable/disable reserved screen space. See warning below. |
+| `ExclusiveZoneValue` | `0` (`auto`) or pixel count | `0` | Reserved size in px when `ExclusiveZone=true`. `0` = auto-calculate. |
 | `AutoHide` | `true`, `false` | `false` | Hide dock when pointer leaves. See note below. |
 | `HotspotDelay` | `0`–`5000` (ms) | `300` | Delay before hiding after pointer leaves. |
 | `Mode` | `static`, `snappy` | `static` | `snappy` enables macOS-style magnification. |

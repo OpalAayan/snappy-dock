@@ -353,25 +353,34 @@ FloatingWindow {
                             onSliderMoved: val => ConfigStore.hotspotDelay = Math.round(val)
                         }
 
-                        M3Slider {
+                        M3Switch {
                             label: "Exclusive Zone"
-                            description: "Reserve pixels from tiled/maximized windows (0 = off)"
-                            from: 0; to: 120; stepSize: 4; unit: " px"
-                            value: Math.max(0, Number(ConfigStore.exclusiveZone || 0))
-                            onSliderMoved: val => ConfigStore.exclusiveZone = Math.round(val)
+                            description: "Reserve screen space so tiled/maximized windows don't overlap the dock"
+                            checked: ConfigStore.exclusiveZone
+                            onToggled: val => ConfigStore.exclusiveZone = val
+                        }
+
+                        M3Slider {
+                            label: "Exclusive Zone Size"
+                            description: "0 = Auto (reserves exact dock extent), or set custom fixed pixels"
+                            from: 0; to: 160; stepSize: 4; unit: " px"; zeroLabel: "Auto"
+                            value: ConfigStore.exclusiveZoneValue
+                            enabled: ConfigStore.exclusiveZone
+                            visible: ConfigStore.exclusiveZone
+                            onSliderMoved: val => ConfigStore.exclusiveZoneValue = Math.round(val)
                         }
 
                         /* Constraint warnings */
                         M3Badge {
                             type: "warning"
                             text: "ExclusiveZone is not recommended with Mode=snappy (can clip magnified icons)"
-                            visible: ConfigStore.mode === "snappy" && ConfigStore.exclusiveZone > 0
+                            visible: ConfigStore.mode === "snappy" && ConfigStore.exclusiveZone
                         }
 
                         M3Badge {
                             type: "warning"
                             text: "AutoHide + ExclusiveZone leaves a reserved blank gap even when the dock is hidden"
-                            visible: ConfigStore.autoHide && ConfigStore.exclusiveZone > 0
+                            visible: ConfigStore.autoHide && ConfigStore.exclusiveZone
                         }
                     }
 

@@ -21,7 +21,8 @@ Singleton {
     property string mode: "static"
     property string layer: "top"
     property bool fullWidth: false
-    property int exclusiveZone: 0
+    property bool exclusiveZone: false
+    property int exclusiveZoneValue: 0
     property bool autoHide: false
     property int hotspotDelay: 300
     property string launcherCmd: "fuzzel"
@@ -127,9 +128,24 @@ Singleton {
                 else if (key === "layer")         store.layer = val.toLowerCase();
                 else if (key === "fullwidth")     store.fullWidth = store._parseBool(val);
                 else if (key === "exclusivezone") {
-                    if (val.toLowerCase() === "auto") store.exclusiveZone = -1;
-                    else if (val.toLowerCase() === "false" || val.toLowerCase() === "off") store.exclusiveZone = 0;
-                    else store.exclusiveZone = parseInt(val) || 0;
+                    var low = val.toLowerCase();
+                    if (low === "true" || low === "yes" || low === "1") {
+                        store.exclusiveZone = true;
+                    } else if (low === "false" || low === "no" || low === "0" || low === "off") {
+                        store.exclusiveZone = false;
+                    } else if (low === "auto") {
+                        store.exclusiveZone = true;
+                        store.exclusiveZoneValue = 0;
+                    } else {
+                        var num = parseInt(val) || 0;
+                        store.exclusiveZone = (num > 0);
+                        store.exclusiveZoneValue = num;
+                    }
+                }
+                else if (key === "exclusivezonevalue") {
+                    var lowV = val.toLowerCase();
+                    if (lowV === "auto") store.exclusiveZoneValue = 0;
+                    else store.exclusiveZoneValue = parseInt(val) || 0;
                 }
                 else if (key === "autohide")           store.autoHide = store._parseBool(val);
                 else if (key === "hotspotdelay")       store.hotspotDelay = parseInt(val) || 300;
@@ -193,7 +209,10 @@ Singleton {
         out.push("Mode=" + store.mode);
         out.push("Layer=" + store.layer);
         out.push("FullWidth=" + (store.fullWidth ? "true" : "false"));
-        out.push("ExclusiveZone=" + (store.exclusiveZone === -1 ? "auto" : store.exclusiveZone));
+        out.push("ExclusiveZone=" + (store.exclusiveZone ? "true" : "false"));
+        if (store.exclusiveZone) {
+            out.push("ExclusiveZoneValue=" + store.exclusiveZoneValue);
+        }
         out.push("AutoHide=" + (store.autoHide ? "true" : "false"));
         out.push("HotspotDelay=" + store.hotspotDelay);
         out.push("LauncherCmd=" + store.launcherCmd);
@@ -257,7 +276,8 @@ Singleton {
         mode = "static";
         layer = "top";
         fullWidth = false;
-        exclusiveZone = 0;
+        exclusiveZone = false;
+        exclusiveZoneValue = 0;
         autoHide = false;
         hotspotDelay = 300;
         launcherCmd = "fuzzel";

@@ -38,13 +38,17 @@ Layer=top
 # For left/right docks, this stretches across the full screen height.
 FullWidth=false
 
-# Reserve screen space for the dock.
-# 0 or off: do not reserve space (floating overlay).
-# auto: let the compositor calculate automatically (static mode only).
-# Any number: reserve that many pixels.
-# IMPORTANT: ExclusiveZone=auto does NOT work in snappy mode due to dynamic
-#            geometry changes. Set a fixed pixel value (e.g. ExclusiveZone=48).
-ExclusiveZone=0
+# Reserve screen space for the dock so tiled windows don't overlap it.
+# Set to true to enable exclusive zone, false to disable.
+# (Backwards-compatible with numbers or auto: e.g. ExclusiveZone=48 or ExclusiveZone=auto)
+ExclusiveZone=false
+
+# Exclusive zone size in pixels when ExclusiveZone=true.
+# 0 or auto: auto-calculate from dock size (static mode only).
+# Any positive number: reserve that exact pixel count (e.g. 48).
+# IMPORTANT: Auto-calculation does NOT work in snappy mode due to dynamic
+#            geometry changes. Set a fixed pixel value (e.g. 48) if using snappy mode.
+ExclusiveZoneValue=0
 
 # Hide the dock when it is not hovered.
 # NOTE: Using AutoHide together with ExclusiveZone is not recommended

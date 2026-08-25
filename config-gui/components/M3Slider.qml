@@ -17,6 +17,7 @@ Item {
 
     property string label: ""
     property string description: ""
+    property string zeroLabel: ""
 
     implicitWidth: parent ? parent.width : 500
     implicitHeight: col.implicitHeight
@@ -75,7 +76,9 @@ Item {
                 anchors.left: parent.left
                 anchors.bottom: trackBox.bottom
                 anchors.bottomMargin: (trackBox.height - height) / 2
-                text: (slider.decimals > 0 ? Number(slider.from).toFixed(slider.decimals) : Math.round(Number(slider.from))) + slider.unit
+                text: (slider.from === 0 && slider.zeroLabel.length > 0)
+                      ? slider.zeroLabel
+                      : ((slider.decimals > 0 ? Number(slider.from).toFixed(slider.decimals) : Math.round(Number(slider.from))) + slider.unit)
                 color: M3Theme.textTertiary
                 font.family: M3Theme.fontFamily
                 font.pixelSize: 11
@@ -248,7 +251,9 @@ Item {
                     Text {
                         id: bubbleText
                         anchors.centerIn: parent
-                        text: (slider.decimals > 0 ? Number(slider.value).toFixed(slider.decimals) : Math.round(Number(slider.value))) + slider.unit
+                        text: (slider.value === 0 && slider.zeroLabel.length > 0)
+                              ? slider.zeroLabel
+                              : ((slider.decimals > 0 ? Number(slider.value).toFixed(slider.decimals) : Math.round(Number(slider.value))) + slider.unit)
                         color: M3Theme.textOnPrimary
                         font.family: M3Theme.fontFamily
                         font.pixelSize: 11
