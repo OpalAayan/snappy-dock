@@ -10,6 +10,7 @@ Singleton {
     /* ── M3 Charcoal + Purple / Material You Palette ──────────────── */
     readonly property color background:           isDark ? "#141218" : "#FEF7FF"
     readonly property color surface:              isDark ? "#1C1B1F" : "#F7F2FA"
+    readonly property color surfaceContainerLowest: isDark ? "#0F0D13" : "#FFFFFF"
     readonly property color surfaceContainer:     isDark ? "#211F26" : "#F3EDF7"
     readonly property color surfaceContainerHigh: isDark ? "#2B2930" : "#ECE6F0"
     readonly property color surfaceContainerHighest: isDark ? "#36343B" : "#E6E0E9"

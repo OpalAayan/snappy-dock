@@ -41,16 +41,13 @@ Item {
     property string itemId: itemRoot.screenName + "_" + itemRoot.className + "_" + itemRoot.title
     property bool menuVisible: DaemonBridge.activeMenuId === itemRoot.itemId
 
-    property string dockPosition: {
-        var pos = String(DaemonBridge.config.position || "bottom").toLowerCase();
-        if (pos === "top" || pos === "bottom" || pos === "left" || pos === "right")
-            return pos;
-        return "bottom";
-    }
-    property bool isLeft: dockPosition === "left"
-    property bool isRight: dockPosition === "right"
-    property bool isTop: dockPosition === "top"
-    property bool isVertical: isLeft || isRight
+    /* dockPosition and isVertical are passed in from Dock.qml to avoid
+       each DockItem re-parsing DaemonBridge.config.position every frame. */
+    property string dockPosition: "bottom"
+    property bool isVertical: false
+    readonly property bool isLeft: dockPosition === "left"
+    readonly property bool isRight: dockPosition === "right"
+    readonly property bool isTop: dockPosition === "top"
     readonly property int indicatorGap: 4
     readonly property int sideIndicatorWidth: Theme.dotSize
 
@@ -291,8 +288,8 @@ Item {
             anchors.centerIn: parent
             width:  itemRoot.size
             height: itemRoot.size
-            sourceSize: Qt.size(Math.ceil(itemRoot.size * itemRoot.snappyMaxScale),
-                                Math.ceil(itemRoot.size * itemRoot.snappyMaxScale))
+            sourceSize: Qt.size(Math.ceil(itemRoot.size * (itemRoot.snappyMode ? itemRoot.snappyMaxScale : 1.0)),
+                                Math.ceil(itemRoot.size * (itemRoot.snappyMode ? itemRoot.snappyMaxScale : 1.0)))
             source: itemRoot.isLauncher ? "" : itemRoot.iconSource()
             smooth: true
             mipmap: true

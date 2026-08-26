@@ -192,6 +192,16 @@ do_start() {
 
     echo "$APP_NAME: starting (shell: $shell_dir)"
     apply_icon_theme_config
+    # ── Isolate Qt from GTK/portal ──────────────────────────────────
+    # Prevent Qt from loading the GTK platform theme plugin (avoids
+    # gtk.css parse warnings like 'border-spacing is not a valid property').
+    export QT_QPA_PLATFORMTHEME=""
+    export QT_STYLE_OVERRIDE="Fusion"
+    # A dock has no use for xdg-desktop-portal services (file dialogs,
+    # etc.).  Disabling it avoids the 'Connection already associated
+    # with an application ID' DBus collision when multiple quickshell
+    # instances share a session bus.
+    export QT_NO_XDG_DESKTOP_PORTAL=1
     exec quickshell -p "$shell_dir"
 }
 
@@ -214,6 +224,10 @@ do_start_detached() {
     fi
 
     apply_icon_theme_config
+    # ── Isolate Qt from GTK/portal ──────────────────────────────────
+    export QT_QPA_PLATFORMTHEME=""
+    export QT_STYLE_OVERRIDE="Fusion"
+    export QT_NO_XDG_DESKTOP_PORTAL=1
     nohup quickshell -p "$shell_dir" >/dev/null 2>&1 &
     disown
     echo "$APP_NAME: dock started (pid $!)"
@@ -234,6 +248,11 @@ do_config_gui() {
     fi
 
     echo "$APP_NAME: opening settings GUI (shell: $gui_dir)"
+    apply_icon_theme_config
+    # ── Isolate Qt from GTK/portal ──────────────────────────────────
+    export QT_QPA_PLATFORMTHEME=""
+    export QT_STYLE_OVERRIDE="Fusion"
+    export QT_NO_XDG_DESKTOP_PORTAL=1
     exec quickshell -p "$gui_dir"
 }
 

@@ -6,6 +6,7 @@
  *    IgnoreSystemSettings — prevents Qt/GTK theme leakage
  */
 //@ pragma IgnoreSystemSettings
+//@ pragma AppId dev.snappydock.shell
 
 import Quickshell
 

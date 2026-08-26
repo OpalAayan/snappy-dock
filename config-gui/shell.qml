@@ -1,4 +1,5 @@
 //@ pragma UseQApplication
+//@ pragma AppId dev.snappydock.configgui
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -7,8 +8,8 @@ import "components"
 FloatingWindow {
     id: window
     title: "Snappy Dock Settings"
-    implicitWidth: 820
-    implicitHeight: 680
+    implicitWidth: 860
+    implicitHeight: 720
     color: "transparent"
     visible: true
 
@@ -214,6 +215,14 @@ FloatingWindow {
 
             property int currentTab: 0
 
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: M3Theme.outlineVariant
+            }
+
             Row {
                 anchors.centerIn: parent
                 spacing: 8
@@ -222,25 +231,30 @@ FloatingWindow {
                     model: [
                         { name: "Layout & Position", icon: "󰕰" },
                         { name: "Snappy & Behavior", icon: "󱐋" },
-                        { name: "Appearance & Theme", icon: "󰏘" }
+                        { name: "Appearance & Theme", icon: "󰏘" },
+                        { name: "Pinned Apps", icon: "󰐃" }
                     ]
 
                     Rectangle {
-                        width: 220
+                        id: tabButton
+                        width: tabContentRow.implicitWidth + 28
                         height: 34
                         radius: M3Theme.radiusFull
-                        color: tabBar.currentTab === index ? M3Theme.secondaryContainer : "transparent"
+                        color: tabBar.currentTab === index
+                               ? M3Theme.secondaryContainer
+                               : (tabMouse.containsMouse ? M3Theme.surfaceContainerHigh : "transparent")
 
                         Behavior on color { ColorAnimation { duration: 120 } }
 
                         Row {
+                            id: tabContentRow
                             anchors.centerIn: parent
-                            spacing: 6
+                            spacing: 8
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.icon
-                                color: tabBar.currentTab === index ? M3Theme.textOnSecondaryContainer : M3Theme.textSecondary
+                                color: tabBar.currentTab === index ? M3Theme.textOnSecondaryContainer : (tabMouse.containsMouse ? M3Theme.textPrimary : M3Theme.textSecondary)
                                 font.family: M3Theme.fontFamily
                                 font.pixelSize: 14
                             }
@@ -248,7 +262,7 @@ FloatingWindow {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.name
-                                color: tabBar.currentTab === index ? M3Theme.textOnSecondaryContainer : M3Theme.textSecondary
+                                color: tabBar.currentTab === index ? M3Theme.textOnSecondaryContainer : (tabMouse.containsMouse ? M3Theme.textPrimary : M3Theme.textSecondary)
                                 font.family: M3Theme.fontFamily
                                 font.pixelSize: 12
                                 font.weight: tabBar.currentTab === index ? Font.DemiBold : Font.Normal
@@ -256,7 +270,9 @@ FloatingWindow {
                         }
 
                         MouseArea {
+                            id: tabMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: tabBar.currentTab = index
                         }
@@ -785,6 +801,461 @@ FloatingWindow {
                             placeholder: "#D0BCFF"
                             text: ConfigStore.themeMenuAccent || ""
                             onTextEdited: val => ConfigStore.themeMenuAccent = val
+                        }
+                    }
+                }
+
+                /* ══════════════════════════════════════════════════════
+                   TAB 3: PINNED APPS
+                   ══════════════════════════════════════════════════════ */
+                Column {
+                    width: parent.width
+                    spacing: 16
+                    visible: tabBar.currentTab === 3
+
+                    /* ── Card 1: Visual Shelf Preview ─────────────── */
+                    M3Card {
+                        title: "Visual Dock Order Preview"
+                        description: "Preview the exact layout and sequence of your pinned apps as they appear in the dock."
+
+                        Rectangle {
+                            id: shelfContainer
+                            width: parent.width
+                            height: 88
+                            radius: 16
+                            color: M3Theme.surfaceContainerLowest
+                            border.color: shelfDragState.active ? M3Theme.primary : M3Theme.outlineVariant
+                            border.width: shelfDragState.active ? 2 : 1
+                            clip: true
+
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                            /* ── Drag State Tracker ──────────────────── */
+                            QtObject {
+                                id: shelfDragState
+                                property bool active: false
+                                property int fromIndex: -1
+                                property int toIndex: -1
+                                property real dragFieldX: 0
+                                property real lastFieldX: 0
+                                property real tiltAngle: 0
+                                property string appName: ""
+                            }
+
+                            readonly property int cellSize: 50
+                            readonly property int cellSpacing: 8
+                            readonly property int cellStep: cellSize + cellSpacing
+                            readonly property int shelfPadding: 14
+                            readonly property int totalWidth: Math.max(width, ConfigStore.pinnedApps.length * cellStep - cellSpacing + shelfPadding * 2)
+
+                            Flickable {
+                                id: previewShelf
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                contentWidth: shelfContainer.totalWidth
+                                contentHeight: height
+                                flickableDirection: Flickable.HorizontalFlick
+                                boundsBehavior: Flickable.StopAtBounds
+                                interactive: !shelfDragState.active
+
+                                Item {
+                                    id: shelfField
+                                    width: shelfContainer.totalWidth
+                                    height: parent.height
+
+                                    Repeater {
+                                        id: shelfRepeater
+                                        model: ConfigStore.pinnedApps
+
+                                        Item {
+                                            id: shelfDelegate
+                                            width: shelfContainer.cellSize
+                                            height: shelfContainer.cellSize
+                                            y: (shelfField.height - height) / 2
+
+                                            readonly property int myIndex: index
+                                            readonly property string myApp: modelData
+                                            readonly property real restX: shelfContainer.shelfPadding + index * shelfContainer.cellStep
+
+                                            /* ── Dynamic slot calculation ─────────── */
+                                            readonly property real visualX: {
+                                                if (!shelfDragState.active) return restX;
+
+                                                var from = shelfDragState.fromIndex;
+                                                var to = shelfDragState.toIndex;
+
+                                                /* The dragged item's ghost slot moves directly to the target destination */
+                                                if (myIndex === from) {
+                                                    return shelfContainer.shelfPadding + to * shelfContainer.cellStep;
+                                                }
+
+                                                /* Other items smoothly part to create the gap */
+                                                if (from < to) {
+                                                    if (myIndex > from && myIndex <= to)
+                                                        return restX - shelfContainer.cellStep;
+                                                } else if (from > to) {
+                                                    if (myIndex >= to && myIndex < from)
+                                                        return restX + shelfContainer.cellStep;
+                                                }
+                                                return restX;
+                                            }
+
+                                            x: visualX
+
+                                            Behavior on x {
+                                                enabled: shelfDragState.active
+                                                NumberAnimation {
+                                                    duration: 180
+                                                    easing.type: Easing.OutCubic
+                                                }
+                                            }
+
+                                            z: (shelfDragState.active && myIndex === shelfDragState.fromIndex) ? 5 : 10
+
+                                            /* ── Regular Tile or Ghost Drop Slot ─── */
+                                            Rectangle {
+                                                anchors.fill: parent
+                                                radius: 12
+
+                                                /* Ghost Target Slot when being dragged */
+                                                color: {
+                                                    if (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex)
+                                                        return Qt.rgba(0.81, 0.74, 1.0, 0.08);
+                                                    return shelfMa.containsMouse ? M3Theme.secondaryContainer : M3Theme.surfaceContainerHigh;
+                                                }
+                                                border.color: {
+                                                    if (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex)
+                                                        return M3Theme.primary;
+                                                    return shelfMa.containsMouse ? M3Theme.primary : "transparent";
+                                                }
+                                                border.width: (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex) ? 2 : 1
+
+                                                scale: (!shelfDragState.active && shelfMa.containsMouse) ? 1.08 : 1.0
+                                                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                                /* App Icon (Ghosted if being dragged) */
+                                                Image {
+                                                    id: delegateIcon
+                                                    anchors.centerIn: parent
+                                                    width: 30
+                                                    height: 30
+                                                    sourceSize: Qt.size(30, 30)
+                                                    source: IconResolver.resolve(shelfDelegate.myApp)
+                                                    smooth: true
+                                                    mipmap: true
+                                                    asynchronous: true
+                                                    opacity: (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex) ? 0.35 : 1.0
+                                                }
+
+                                                /* Fallback letter */
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    visible: delegateIcon.status === Image.Error || delegateIcon.status === Image.Null
+                                                    text: {
+                                                        var parts = shelfDelegate.myApp.split(".");
+                                                        return parts[parts.length - 1].charAt(0).toUpperCase();
+                                                    }
+                                                    color: M3Theme.primary
+                                                    font.family: M3Theme.fontFamily
+                                                    font.pixelSize: 15
+                                                    font.weight: Font.Bold
+                                                    opacity: (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex) ? 0.35 : 1.0
+                                                }
+
+                                                /* Position badge */
+                                                Rectangle {
+                                                    anchors.bottom: parent.bottom
+                                                    anchors.right: parent.right
+                                                    anchors.bottomMargin: -2
+                                                    anchors.rightMargin: -2
+                                                    width: 17
+                                                    height: 17
+                                                    radius: 8.5
+                                                    color: M3Theme.primary
+                                                    opacity: (shelfDragState.active && shelfDelegate.myIndex === shelfDragState.fromIndex) ? 0.6 : 1.0
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: {
+                                                            if (shelfDragState.active) {
+                                                                var from = shelfDragState.fromIndex;
+                                                                var to = shelfDragState.toIndex;
+                                                                if (shelfDelegate.myIndex === from) return "" + (to + 1);
+                                                                if (from < to && shelfDelegate.myIndex > from && shelfDelegate.myIndex <= to)
+                                                                    return "" + shelfDelegate.myIndex;
+                                                                if (from > to && shelfDelegate.myIndex >= to && shelfDelegate.myIndex < from)
+                                                                    return "" + (shelfDelegate.myIndex + 2);
+                                                            }
+                                                            return "" + (shelfDelegate.myIndex + 1);
+                                                        }
+                                                        color: M3Theme.textOnPrimary
+                                                        font.family: M3Theme.fontFamily
+                                                        font.pixelSize: 9
+                                                        font.weight: Font.Bold
+                                                    }
+                                                }
+
+                                                /* Top-Right Remove/Unpin 'X' Button */
+                                                Rectangle {
+                                                    id: removeBtn
+                                                    anchors.top: parent.top
+                                                    anchors.right: parent.right
+                                                    anchors.topMargin: -4
+                                                    anchors.rightMargin: -4
+                                                    width: 18
+                                                    height: 18
+                                                    radius: 9
+                                                    z: 20
+                                                    visible: !shelfDragState.active && (shelfMa.containsMouse || removeMa.containsMouse)
+                                                    color: removeMa.containsMouse ? "#FF5555" : M3Theme.surfaceContainerHighest
+                                                    border.color: removeMa.containsMouse ? "#FF8888" : M3Theme.outline
+                                                    border.width: 1
+                                                    scale: removeMa.pressed ? 0.85 : (removeMa.containsMouse ? 1.15 : 1.0)
+
+                                                    Behavior on scale { NumberAnimation { duration: 80 } }
+                                                    Behavior on color { ColorAnimation { duration: 80 } }
+                                                    Behavior on border.color { ColorAnimation { duration: 80 } }
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: "󰅖"
+                                                        color: removeMa.containsMouse ? "#FFFFFF" : M3Theme.textSecondary
+                                                        font.family: M3Theme.fontFamily
+                                                        font.pixelSize: 11
+                                                    }
+
+                                                    MouseArea {
+                                                        id: removeMa
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: ConfigStore.removePinned(shelfDelegate.myIndex)
+                                                    }
+                                                }
+                                            }
+
+                                            /* ── Mouse Interaction ───────────────── */
+                                            MouseArea {
+                                                id: shelfMa
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: shelfDragState.active ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                                                preventStealing: true
+
+                                                onPressed: function(mouse) {
+                                                    var pt = mapToItem(shelfField, mouse.x, mouse.y);
+                                                    shelfDragState.fromIndex = shelfDelegate.myIndex;
+                                                    shelfDragState.toIndex = shelfDelegate.myIndex;
+                                                    shelfDragState.dragFieldX = pt.x - shelfContainer.cellSize / 2;
+                                                    shelfDragState.lastFieldX = pt.x;
+                                                    shelfDragState.tiltAngle = 0;
+                                                    shelfDragState.appName = shelfDelegate.myApp;
+                                                    shelfDragState.active = true;
+                                                }
+
+                                                onPositionChanged: function(mouse) {
+                                                    if (!shelfDragState.active || shelfDragState.fromIndex !== shelfDelegate.myIndex) return;
+                                                    var pt = mapToItem(shelfField, mouse.x, mouse.y);
+
+                                                    var dx = pt.x - shelfDragState.lastFieldX;
+                                                    shelfDragState.lastFieldX = pt.x;
+                                                    shelfDragState.tiltAngle = Math.max(-8, Math.min(8, dx * 1.6));
+
+                                                    /* Drag proxy follow */
+                                                    var minX = shelfContainer.shelfPadding;
+                                                    var maxX = shelfContainer.shelfPadding + (ConfigStore.pinnedApps.length - 1) * shelfContainer.cellStep;
+                                                    shelfDragState.dragFieldX = Math.max(minX, Math.min(maxX, pt.x - shelfContainer.cellSize / 2));
+
+                                                    /* Target slot calculation */
+                                                    var rawIdx = (pt.x - shelfContainer.shelfPadding) / shelfContainer.cellStep;
+                                                    var target = Math.max(0, Math.min(ConfigStore.pinnedApps.length - 1, Math.floor(rawIdx + 0.1)));
+                                                    if (target !== shelfDragState.toIndex) {
+                                                        shelfDragState.toIndex = target;
+                                                    }
+                                                }
+
+                                                onReleased: function(mouse) {
+                                                    if (!shelfDragState.active || shelfDragState.fromIndex !== shelfDelegate.myIndex) return;
+                                                    var from = shelfDragState.fromIndex;
+                                                    var to = shelfDragState.toIndex;
+                                                    shelfDragState.active = false;
+                                                    shelfDragState.fromIndex = -1;
+                                                    shelfDragState.toIndex = -1;
+                                                    shelfDragState.tiltAngle = 0;
+
+                                                    if (from >= 0 && to >= 0 && from !== to) {
+                                                        ConfigStore.movePinned(from, to);
+                                                    }
+                                                }
+
+                                                onCanceled: {
+                                                    shelfDragState.active = false;
+                                                    shelfDragState.fromIndex = -1;
+                                                    shelfDragState.toIndex = -1;
+                                                    shelfDragState.tiltAngle = 0;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    /* ── Floating Drag Proxy (Elevated Live Icon) ── */
+                                    Item {
+                                        id: floatingDragProxy
+                                        visible: shelfDragState.active
+                                        width: shelfContainer.cellSize
+                                        height: shelfContainer.cellSize
+                                        y: (shelfField.height - height) / 2
+                                        x: shelfDragState.dragFieldX
+                                        z: 9999
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: 12
+                                            color: M3Theme.primaryContainer
+                                            border.color: M3Theme.primary
+                                            border.width: 2
+                                            scale: 1.22
+                                            rotation: shelfDragState.tiltAngle
+
+                                            Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack } }
+                                            Behavior on rotation { NumberAnimation { duration: 60 } }
+
+                                            Image {
+                                                anchors.centerIn: parent
+                                                width: 32
+                                                height: 32
+                                                sourceSize: Qt.size(32, 32)
+                                                source: IconResolver.resolve(shelfDragState.appName)
+                                                smooth: true
+                                                mipmap: true
+                                            }
+
+                                            /* Fallback letter */
+                                            Text {
+                                                anchors.centerIn: parent
+                                                visible: !IconResolver.resolve(shelfDragState.appName)
+                                                text: {
+                                                    if (!shelfDragState.appName) return "";
+                                                    var parts = shelfDragState.appName.split(".");
+                                                    return parts[parts.length - 1].charAt(0).toUpperCase();
+                                                }
+                                                color: M3Theme.primary
+                                                font.family: M3Theme.fontFamily
+                                                font.pixelSize: 16
+                                                font.weight: Font.Bold
+                                            }
+
+                                            /* Live destination badge */
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                anchors.right: parent.right
+                                                anchors.bottomMargin: -3
+                                                anchors.rightMargin: -3
+                                                width: 19
+                                                height: 19
+                                                radius: 9.5
+                                                color: M3Theme.primary
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "" + (shelfDragState.toIndex + 1)
+                                                    color: M3Theme.textOnPrimary
+                                                    font.family: M3Theme.fontFamily
+                                                    font.pixelSize: 10
+                                                    font.weight: Font.Bold
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    /* Empty state */
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: ConfigStore.pinnedApps.length === 0
+                                        text: "No pinned applications"
+                                        color: M3Theme.textTertiary
+                                        font.family: M3Theme.fontFamily
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+
+                            /* Drag hint text */
+                            Text {
+                                anchors.bottom: parent.bottom
+                                anchors.right: parent.right
+                                anchors.bottomMargin: 4
+                                anchors.rightMargin: 8
+                                visible: !shelfDragState.active && ConfigStore.pinnedApps.length > 1
+                                text: "✦ Drag icons to reorder"
+                                color: M3Theme.textTertiary
+                                font.family: M3Theme.fontFamily
+                                font.pixelSize: 10
+                                opacity: 0.6
+                            }
+                        }
+                    }
+
+                    /* ── Card 2: Pinned Apps List ─────────────────── */
+                    M3Card {
+                        title: "Pinned Applications (" + ConfigStore.pinnedApps.length + ")"
+                        description: "Drag icons in the preview above or use the buttons below to reorder."
+
+                        Column {
+                            width: parent.width
+                            spacing: 8
+
+                            Repeater {
+                                model: ConfigStore.pinnedApps
+
+                                M3PinnedAppItem {
+                                    appName: modelData
+                                    itemIndex: index
+                                    totalCount: ConfigStore.pinnedApps.length
+
+                                    onMoveUp: ConfigStore.movePinnedUp(index)
+                                    onMoveDown: ConfigStore.movePinnedDown(index)
+                                    onRemove: ConfigStore.removePinned(index)
+                                }
+                            }
+
+                            /* Empty State */
+                            Item {
+                                width: parent.width
+                                height: 120
+                                visible: ConfigStore.pinnedApps.length === 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "󰐃"
+                                        color: M3Theme.textTertiary
+                                        font.family: M3Theme.fontFamily
+                                        font.pixelSize: 36
+                                    }
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "No pinned applications"
+                                        color: M3Theme.textSecondary
+                                        font.family: M3Theme.fontFamily
+                                        font.pixelSize: 13
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "Right-click any running dock item and select 'Pin to Dock' to add apps."
+                                        color: M3Theme.textTertiary
+                                        font.family: M3Theme.fontFamily
+                                        font.pixelSize: 11
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -71,6 +71,16 @@ Singleton {
     property string themeMenuAccent: ""
     property string themeMenuSeparator: ""
 
+    readonly property string pinnedPath: {
+        var xdg = Quickshell.env("XDG_CONFIG_HOME");
+        if (xdg && xdg.length > 0)
+            return xdg + "/snappy-dock/pinned";
+        var home = Quickshell.env("HOME") || "/home";
+        return home + "/.config/snappy-dock/pinned";
+    }
+
+    property var pinnedApps: []
+
     property bool isLoaded: false
     property string saveStatus: ""
 
@@ -91,8 +101,73 @@ Singleton {
         }
     }
 
+    FileView {
+        id: pinnedView
+        path: store.pinnedPath
+        preload: true
+        watchChanges: false
+
+        onLoaded: {
+            store._parsePinned(pinnedView.text());
+        }
+
+        onLoadFailed: {
+            console.log("[ConfigStore] Pinned file not found:", store.pinnedPath);
+            store.pinnedApps = [];
+        }
+    }
+
     function reload() {
         fileView.reload();
+        pinnedView.reload();
+    }
+
+    function _parsePinned(content) {
+        if (!content) {
+            store.pinnedApps = [];
+            return;
+        }
+        var lines = content.split(/\r?\n/);
+        var apps = [];
+        for (var i = 0; i < lines.length; i++) {
+            var l = lines[i].trim();
+            if (l.length > 0 && !l.startsWith("#") && !l.startsWith(";")) {
+                apps.push(l);
+            }
+        }
+        store.pinnedApps = apps;
+    }
+
+    function savePinned() {
+        var text = store.pinnedApps.join("\n") + (store.pinnedApps.length > 0 ? "\n" : "");
+        pinnedView.setText(text);
+    }
+
+    function movePinned(fromIdx, toIdx) {
+        if (fromIdx < 0 || fromIdx >= pinnedApps.length ||
+            toIdx < 0 || toIdx >= pinnedApps.length || fromIdx === toIdx)
+            return;
+        var arr = pinnedApps.slice();
+        var item = arr.splice(fromIdx, 1)[0];
+        arr.splice(toIdx, 0, item);
+        pinnedApps = arr;
+        savePinned();
+    }
+
+    function movePinnedUp(idx) {
+        movePinned(idx, idx - 1);
+    }
+
+    function movePinnedDown(idx) {
+        movePinned(idx, idx + 1);
+    }
+
+    function removePinned(idx) {
+        if (idx < 0 || idx >= pinnedApps.length) return;
+        var arr = pinnedApps.slice();
+        arr.splice(idx, 1);
+        pinnedApps = arr;
+        savePinned();
     }
 
     function _parseBool(val) {
@@ -267,6 +342,7 @@ Singleton {
     function save() {
         var text = generateIni();
         fileView.setText(text);
+        savePinned();
         saveStatus = "Saved!";
     }
 

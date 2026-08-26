@@ -172,18 +172,21 @@ Scope {
                 ? Math.ceil((_snappyMaxScale - 1.0) * _snappyExtent * 0.5 + 8 + _snappyMaxRiseGrowth * 0.5) * 2
                 : 0
 
+            /* Reusable empty result — avoids allocating a new object on every
+               binding re-evaluation when displacement is inactive. */
+            readonly property var _emptyDisplacement: ({ displacements: [], totalGrowth: 0 })
+
             /* Per-frame displacement: recomputed at ~60fps when pointer is
                on the dock.  Each icon's displacement equals where its center
                WOULD be if all icons occupied their scaled sizes, minus where
                it actually is in the fixed Grid — centered so the dock
                expands symmetrically.                                        */
             property var _snappyDisplacementData: {
-                var empty = { displacements: [], totalGrowth: 0 };
-                if (_snappyRiseSpacing <= 0) return empty;
+                if (_snappyRiseSpacing <= 0) return _emptyDisplacement;
                 var n = displayItems.length;
-                if (n === 0) return empty;
+                if (n === 0) return _emptyDisplacement;
                 var mouseAxis = isVertical ? snappyMouseY : snappyMouseX;
-                if (mouseAxis === pointerUnset) return empty;
+                if (mouseAxis === pointerUnset) return _emptyDisplacement;
                 var cell = _snappyExtent, sp = Theme.itemSpacing;
                 var peak = _snappyMaxScale;
                 var sig = Math.max(cell * (DaemonBridge.config.spread || 3) * 0.42, 40);
@@ -660,6 +663,8 @@ Scope {
                                 instances:     modelData.instances     || []
                                 size:          Theme.iconSize
                                 screenName:    screenScope.modelData.name || ""
+                                dockPosition:  screenScope.dockPosition
+                                isVertical:    screenScope.isVertical
                                 dockMouseX:    screenScope.snappyMouseX
                                 dockMouseY:    screenScope.snappyMouseY
                                 dockPointerUnset: screenScope.pointerUnset
