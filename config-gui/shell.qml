@@ -274,7 +274,10 @@ FloatingWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: tabBar.currentTab = index
+                            onClicked: {
+                                tabBar.currentTab = index;
+                                flickable.contentY = 0;
+                            }
                         }
                     }
                 }
@@ -1260,6 +1263,19 @@ FloatingWindow {
                     }
                 }
             }
+        }
+
+        /* ── Scrollbar ────────────────────────────────────────────── */
+        M3ScrollBar {
+            id: scrollBar
+            flickable: flickable
+            anchors.top: flickable.top
+            anchors.bottom: flickable.bottom
+            anchors.right: flickable.right
+            anchors.topMargin: 8
+            anchors.bottomMargin: 8
+            anchors.rightMargin: 4
+            z: 10
         }
     }
 }
