@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "config_internal.h"
+#include "icons.h"
 #include "log.h"
 
 #include <ctype.h>
@@ -101,6 +102,7 @@ static void config_set_defaults(DockConfig *cfg)
     cfg->icon_spacing   = 2;
     cfg->magnification  = 0.78;
     cfg->rise_spacing    = 0.5;
+    cfg->contract_delay  = 0;
     cfg->theme_bg               = str_dup("");
     cfg->theme_border_color     = str_dup("");
     cfg->theme_border_width     = 1;
@@ -198,6 +200,10 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
             cfg->rise_spacing = parse_double(val, 0.5);
             if (cfg->rise_spacing < 0.0) cfg->rise_spacing = 0.0;
             if (cfg->rise_spacing > 2.0) cfg->rise_spacing = 2.0;
+        } else if (str_eq_ci(key, "ContractDelay") || str_eq_ci(key, "RestoreDelay")) {
+            cfg->contract_delay = atoi(val);
+            if (cfg->contract_delay < 0) cfg->contract_delay = 0;
+            if (cfg->contract_delay > 2000) cfg->contract_delay = 2000;
         }
     } else if (str_eq_ci(section, "Margins")) {
         if (str_eq_ci(key, "Top"))         cfg->margin_top    = atoi(val);
@@ -270,6 +276,8 @@ static void config_apply_ini_key(DockConfig *cfg, const char *section,
             free(cfg->theme_menu_separator);
             cfg->theme_menu_separator = str_dup(val);
         }
+    } else if (str_eq_ci(section, "IconOverrides")) {
+        icons_set_override(key, val);
     }
 }
 
@@ -279,6 +287,7 @@ static void config_load_ini(DockConfig *cfg, const char *path)
     if (!f) return;
 
     LOG_INF("Loading config: %s", path);
+    icons_clear_overrides();
 
     char line[512];
     char section[64] = "";

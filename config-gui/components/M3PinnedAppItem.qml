@@ -14,9 +14,13 @@ Rectangle {
     signal moveUp()
     signal moveDown()
     signal remove()
+    signal iconOverrideChanged(string appName, string path)
+
+    property bool editingIcon: false
 
     width: parent ? parent.width : 500
-    height: 54
+    height: editingIcon ? 100 : 54
+    Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
     radius: 12
     color: hoverArea.containsMouse ? M3Theme.surfaceContainerHigh : M3Theme.surfaceContainer
     border.color: hoverArea.containsMouse ? M3Theme.primary : M3Theme.outlineVariant
@@ -53,7 +57,8 @@ Rectangle {
         anchors.leftMargin: 12
         anchors.right: actionRow.left
         anchors.rightMargin: 10
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 11
         spacing: 12
 
         /* Drag Handle Icon */
@@ -148,7 +153,8 @@ Rectangle {
         id: actionRow
         anchors.right: parent.right
         anchors.rightMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 11  /* vertically center within the 54px top zone */
         spacing: 6
 
         /* Move Up Button */
@@ -205,6 +211,36 @@ Rectangle {
             }
         }
 
+        /* Set Icon Override Button */
+        Rectangle {
+            width: 32
+            height: 32
+            radius: 16
+            color: iconBtnMouse.containsMouse ? M3Theme.surfaceContainerHighest : "transparent"
+            scale: iconBtnMouse.pressed ? 0.88 : (iconBtnMouse.containsMouse ? 1.08 : 1.0)
+            Behavior on scale { NumberAnimation { duration: 80 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰏘"  //  Nerd Font picture icon
+                color: {
+                    if (ConfigStore.getIconOverride(root.appName))
+                        return M3Theme.primary;
+                    return iconBtnMouse.containsMouse ? M3Theme.textPrimary : M3Theme.textSecondary;
+                }
+                font.family: M3Theme.fontFamily
+                font.pixelSize: 15
+            }
+
+            MouseArea {
+                id: iconBtnMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.editingIcon = !root.editingIcon
+            }
+        }
+
         /* Separator */
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
@@ -235,6 +271,129 @@ Rectangle {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.remove()
+            }
+        }
+    }
+
+    /* ── Inline Icon Path Editor ──────────────────────────────────── */
+    Row {
+        id: iconPathEditor
+        visible: root.editingIcon
+        opacity: root.editingIcon ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 52
+        anchors.rightMargin: 12
+        anchors.bottomMargin: 6
+        height: 32
+        spacing: 6
+
+        Rectangle {
+            width: parent.width - confirmBtn.width - clearBtn.width - 12
+            height: 28
+            radius: 6
+            color: M3Theme.surfaceContainerHighest
+            border.color: iconPathInput.activeFocus ? M3Theme.primary : M3Theme.outlineVariant
+            border.width: 1
+
+            TextInput {
+                id: iconPathInput
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                verticalAlignment: TextInput.AlignVCenter
+                color: M3Theme.textPrimary
+                selectionColor: M3Theme.primary
+                selectedTextColor: M3Theme.textOnPrimary
+                font.family: M3Theme.fontFamily
+                font.pixelSize: 11
+                clip: true
+                text: ConfigStore.getIconOverride(root.appName)
+                onAccepted: {
+                    if (text.trim().length > 0) {
+                        ConfigStore.setIconOverride(root.appName, text.trim());
+                        root.iconOverrideChanged(root.appName, text.trim());
+                    }
+                    root.editingIcon = false;
+                }
+
+                // Placeholder
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    visible: !iconPathInput.text && !iconPathInput.activeFocus
+                    text: "/path/to/icon.svg or .png"
+                    color: M3Theme.textTertiary
+                    font.family: M3Theme.fontFamily
+                    font.pixelSize: 11
+                }
+            }
+        }
+
+        /* Confirm / Save button */
+        Rectangle {
+            id: confirmBtn
+            width: 28
+            height: 28
+            radius: 6
+            color: confirmMouse.containsMouse ? M3Theme.primaryContainer : M3Theme.surfaceContainerHigh
+            scale: confirmMouse.pressed ? 0.88 : 1.0
+            Behavior on scale { NumberAnimation { duration: 80 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰹞"  //  Nerd Font check
+                color: M3Theme.primary
+                font.family: M3Theme.fontFamily
+                font.pixelSize: 14
+            }
+
+            MouseArea {
+                id: confirmMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (iconPathInput.text.trim().length > 0) {
+                        ConfigStore.setIconOverride(root.appName, iconPathInput.text.trim());
+                        root.iconOverrideChanged(root.appName, iconPathInput.text.trim());
+                    }
+                    root.editingIcon = false;
+                }
+            }
+        }
+
+        /* Clear / Remove override button */
+        Rectangle {
+            id: clearBtn
+            width: 28
+            height: 28
+            radius: 6
+            color: clearMouse.containsMouse ? Qt.rgba(0.95, 0.25, 0.25, 0.15) : M3Theme.surfaceContainerHigh
+            scale: clearMouse.pressed ? 0.88 : 1.0
+            Behavior on scale { NumberAnimation { duration: 80 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: "󰅖"  //  Nerd Font close/X
+                color: clearMouse.containsMouse ? "#FF5555" : M3Theme.textSecondary
+                font.family: M3Theme.fontFamily
+                font.pixelSize: 14
+            }
+
+            MouseArea {
+                id: clearMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    ConfigStore.clearIconOverride(root.appName);
+                    iconPathInput.text = "";
+                    root.iconOverrideChanged(root.appName, "");
+                    root.editingIcon = false;
+                }
             }
         }
     }

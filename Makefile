@@ -73,6 +73,7 @@ install: all
 	cp -r $(CONFIG_GUI_DIR) $(DESTDIR)$(APP_DATADIR)/
 	find $(DESTDIR)$(APP_DATADIR)/$(CONFIG_GUI_DIR) -type d -exec chmod 755 {} +
 	find $(DESTDIR)$(APP_DATADIR)/$(CONFIG_GUI_DIR) -type f -exec chmod 644 {} +
+	find $(DESTDIR)$(APP_DATADIR)/$(CONFIG_GUI_DIR)/scripts -type f -exec chmod 755 {} + 2>/dev/null || true
 	
 	install -m 644 $(CONFIG_EXAMPLE) $(DESTDIR)$(APP_DATADIR)/
 	@echo ""

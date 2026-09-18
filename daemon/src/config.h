@@ -52,6 +52,7 @@ typedef struct {
     int    icon_spacing;    /* gap between dock items (px), default 2      */
     double magnification;   /* extra scale on hover (0.0–2.0), default 0.78*/
     double rise_spacing;    /* main-axis push factor, snappy only (0.0–2.0)*/
+    int    contract_delay;  /* ms to hold expanded state before contracting, snappy only */
 
     /* Theme (styling & colors) */
     char *theme_bg;                 /* dock background color hex/rgba */

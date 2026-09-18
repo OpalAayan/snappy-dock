@@ -28,6 +28,12 @@ void icons_init(void);
 void icons_cleanup(void);
 
 /*
+ * Set or clear user icon overrides (from [IconOverrides] in config.ini).
+ */
+void icons_set_override(const char *class_name, const char *icon_path);
+void icons_clear_overrides(void);
+
+/*
  * Return the icon name for the given window class.
  *
  * On cache miss, searches XDG directories for a matching .desktop

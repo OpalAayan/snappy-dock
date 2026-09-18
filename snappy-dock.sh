@@ -253,6 +253,7 @@ do_config_gui() {
     export QT_QPA_PLATFORMTHEME=""
     export QT_STYLE_OVERRIDE="Fusion"
     export QT_NO_XDG_DESKTOP_PORTAL=1
+    export SNAPPY_DOCK_CONFIG_GUI_DIR="$gui_dir"
     exec quickshell -p "$gui_dir"
 }
 

@@ -502,6 +502,21 @@ FloatingWindow {
                             value: Number(ConfigStore.iconSpacing || 2)
                             onSliderMoved: val => ConfigStore.iconSpacing = Math.round(val)
                         }
+
+                        M3Slider {
+                            label: "Contract Delay"
+                            description: "Hold time before dock contracts after cursor leaves (keep less than AutoHide delay)"
+                            from: 0; to: 2000; stepSize: 50; unit: " ms"
+                            value: Number(ConfigStore.contractDelay || 0)
+                            enabled: ConfigStore.mode === "snappy"
+                            onSliderMoved: val => ConfigStore.contractDelay = Math.round(val)
+                        }
+
+                        M3Badge {
+                            type: "warning"
+                            text: "Contract Delay (" + ConfigStore.contractDelay + " ms) should be less than AutoHide delay (" + ConfigStore.hotspotDelay + " ms)"
+                            visible: ConfigStore.mode === "snappy" && ConfigStore.autoHide && ConfigStore.contractDelay > 0 && ConfigStore.contractDelay >= ConfigStore.hotspotDelay
+                        }
                     }
 
                     M3Card {
@@ -1125,6 +1140,7 @@ FloatingWindow {
                                             Behavior on rotation { NumberAnimation { duration: 60 } }
 
                                             Image {
+                                                id: proxyIconImg
                                                 anchors.centerIn: parent
                                                 width: 32
                                                 height: 32
@@ -1137,7 +1153,7 @@ FloatingWindow {
                                             /* Fallback letter */
                                             Text {
                                                 anchors.centerIn: parent
-                                                visible: !IconResolver.resolve(shelfDragState.appName)
+                                                visible: proxyIconImg.status === Image.Error || proxyIconImg.status === Image.Null
                                                 text: {
                                                     if (!shelfDragState.appName) return "";
                                                     var parts = shelfDragState.appName.split(".");

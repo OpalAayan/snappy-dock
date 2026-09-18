@@ -92,6 +92,10 @@ void protocol_emit_config(const DockConfig *cfg)
         json_object_new_double(cfg->magnification));
     json_object_object_add(obj, "rise_spacing",
         json_object_new_double(cfg->rise_spacing));
+    json_object_object_add(obj, "contract_delay",
+        json_object_new_int(cfg->contract_delay));
+    json_object_object_add(obj, "restore_delay",
+        json_object_new_int(cfg->contract_delay));
     json_object_object_add(obj, "theme_bg",
         json_object_new_string(cfg->theme_bg ? cfg->theme_bg : ""));
     json_object_object_add(obj, "theme_border_color",

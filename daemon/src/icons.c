@@ -34,11 +34,19 @@ typedef struct {
     char *icon_name;
 } CacheEntry;
 
-static char       *s_dirs[MAX_DIRS];
-static int         s_dir_count = 0;
+typedef struct {
+    char *class_name;
+    char *icon_path;
+} OverrideEntry;
 
-static CacheEntry  s_cache[MAX_CACHE];
-static int         s_cache_count = 0;
+static char          *s_dirs[MAX_DIRS];
+static int            s_dir_count = 0;
+
+static CacheEntry     s_cache[MAX_CACHE];
+static int            s_cache_count = 0;
+
+static OverrideEntry  s_overrides[MAX_CACHE];
+static int            s_override_count = 0;
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -363,6 +371,32 @@ void icons_init(void)
     LOG_INF("Icon search: %d directories", s_dir_count);
 }
 
+void icons_set_override(const char *class_name, const char *icon_path)
+{
+    if (!class_name || !icon_path) return;
+    for (int i = 0; i < s_override_count; i++) {
+        if (strcasecmp(s_overrides[i].class_name, class_name) == 0) {
+            free(s_overrides[i].icon_path);
+            s_overrides[i].icon_path = strdup(icon_path);
+            return;
+        }
+    }
+    if (s_override_count < MAX_CACHE) {
+        s_overrides[s_override_count].class_name = strdup(class_name);
+        s_overrides[s_override_count].icon_path  = strdup(icon_path);
+        s_override_count++;
+    }
+}
+
+void icons_clear_overrides(void)
+{
+    for (int i = 0; i < s_override_count; i++) {
+        free(s_overrides[i].class_name);
+        free(s_overrides[i].icon_path);
+    }
+    s_override_count = 0;
+}
+
 void icons_cleanup(void)
 {
     for (int i = 0; i < s_dir_count; i++) free(s_dirs[i]);
@@ -373,12 +407,20 @@ void icons_cleanup(void)
         free(s_cache[i].icon_name);
     }
     s_cache_count = 0;
+
+    icons_clear_overrides();
 }
 
 char *icons_get_name(const char *class_name)
 {
     if (!class_name || !class_name[0])
         return strdup(FALLBACK_ICON);
+
+    /* 0. User override hit */
+    for (int i = 0; i < s_override_count; i++) {
+        if (strcasecmp(s_overrides[i].class_name, class_name) == 0)
+            return strdup(s_overrides[i].icon_path);
+    }
 
     /* 1. Cache hit */
     char *cached = cache_lookup(class_name);

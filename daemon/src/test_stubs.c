@@ -33,6 +33,8 @@ void hypr_ipc_exec(const char *cmd)                   { (void)cmd; }
 
 void  icons_init(void)              {}
 void  icons_cleanup(void)           {}
+void  icons_set_override(const char *class_name, const char *icon_path) { (void)class_name; (void)icon_path; }
+void  icons_clear_overrides(void)   {}
 char *icons_get_name(const char *class_name) {
     return strdup(class_name ? class_name : "application-x-executable");
 }

@@ -312,7 +312,21 @@ Scope {
                        + _hideProgress * (hiddenEdgeMargin - configuredMargin));
             }
 
-            function clearSnappyPointer() {
+            /* ── Snappy contract delay ────────────────────────────────── */
+            /* How long (ms) to hold the expanded state before contracting
+               when the cursor leaves the dock in snappy mode.
+               0 = contract immediately (default).                        */
+            readonly property int _snappyContractDelayMs: {
+                var d = DaemonBridge.config.contract_delay !== undefined
+                    ? DaemonBridge.config.contract_delay
+                    : DaemonBridge.config.restore_delay;
+                return (d !== undefined && d > 0) ? Math.min(d, 2000) : 0;
+            }
+
+            property bool _pointerInDockIcons: false
+
+            function _doClearSnappyPointer() {
+                _pointerInDockIcons = false;
                 _pendingX = pointerUnset;
                 _pendingY = pointerUnset;
                 snappyMouseX = pointerUnset;
@@ -320,10 +334,58 @@ Scope {
                 _snappyThrottle.stop();
             }
 
+            /* Immediate clear — used on config changes, autohide completion, etc. */
+            function clearSnappyPointer() {
+                _snappyContractTimer.stop();
+                _doClearSnappyPointer();
+            }
+
+            /* Delayed contract — used when cursor leaves the dock icons.
+               If contract_delay > 0, the dock holds its expanded state
+               for that many ms before contracting, giving a smoother feel. */
+            function scheduleSnappyContract() {
+                /* Only delay contract if the dock was actually expanded in the first place */
+                var wasExpanded = (_pendingX !== pointerUnset || snappyMouseX !== pointerUnset);
+                if (!wasExpanded) {
+                    _doClearSnappyPointer();
+                    return;
+                }
+
+                if (_snappyContractDelayMs > 0) {
+                    if (!_snappyContractTimer.running) {
+                        _snappyContractTimer.interval = _snappyContractDelayMs;
+                        _snappyContractTimer.restart();
+                    }
+                } else {
+                    _doClearSnappyPointer();
+                }
+            }
+
+            /* Cancel any pending contract — cursor came back to icons before it fired. */
+            function cancelSnappyContract() {
+                _snappyContractTimer.stop();
+            }
+
+            Timer {
+                id: _snappyContractTimer
+                repeat: false
+                onTriggered: {
+                    screenScope._doClearSnappyPointer();
+                    if (screenScope.autohide && !screenScope.mouseInDock) {
+                        screenScope.scheduleHide();
+                    }
+                }
+            }
+
             /* Raw mouse coords are buffered here; a 16ms timer flushes them
                to the actual properties, capping re-evaluation to ~60fps. */
             property real _pendingX: pointerUnset
             property real _pendingY: pointerUnset
+
+            /* Whether snappy magnification is actively being tracked under cursor.
+               Drives the input mask so the panel only captures clicks in the
+               magnified overflow zone when icons are actively hovered. */
+            readonly property bool _snappyMagnifyActive: snappyMode && _pointerInDockIcons
 
             Timer {
                 id: _snappyThrottle
@@ -336,9 +398,28 @@ Scope {
             }
 
             function updateSnappyPointerFromContainer(x, y) {
-                if (!snappyMode) {
+                if (!snappyMode || !dockRevealed) {
                     clearSnappyPointer();
                     return;
+                }
+
+                /* Check cross-axis: cursor must be within the dock background
+                   bounds before activating magnification.  This prevents the
+                   "pre-ghosting" where icons rise when the cursor is still in
+                   the headroom/overflow area above the dock but hasn't actually
+                   reached the icons yet. */
+                var bgLocal = dockContainer.mapToItem(dockBackground, x, y);
+                var inBgCross;
+                switch (dockPosition) {
+                    case "left":
+                    case "right":
+                        inBgCross = bgLocal.x >= 0 && bgLocal.x <= dockBackground.width;
+                        break;
+                    case "top":
+                    case "bottom":
+                    default:
+                        inBgCross = bgLocal.y >= 0 && bgLocal.y <= dockBackground.height;
+                        break;
                 }
 
                 var mapped = dockContainer.mapToItem(dockLayout, x, y);
@@ -356,17 +437,31 @@ Scope {
                         axisSize = dockLayout.implicitWidth > 0 ? dockLayout.implicitWidth : dockLayout.width;
                         break;
                 }
-                if (axisSize <= 0
-                    || axisValue < -snappyAxisMargin
-                    || axisValue > axisSize + snappyAxisMargin) {
-                    clearSnappyPointer();
+                var inBgMain = (axisSize > 0
+                                && axisValue >= -snappyAxisMargin
+                                && axisValue <= axisSize + snappyAxisMargin);
+
+                if (!inBgCross || !inBgMain) {
+                    /* Cursor is outside the icon area */
+                    if (_pointerInDockIcons) {
+                        _pointerInDockIcons = false;
+                        scheduleSnappyContract();
+                    }
                     return;
                 }
 
+                /* Cursor is inside the icon area */
+                _pointerInDockIcons = true;
+                cancelSnappyContract();
+
                 _pendingX = mapped.x;
                 _pendingY = mapped.y;
-                if (!_snappyThrottle.running)
+                if (snappyMouseX === pointerUnset) {
+                    snappyMouseX = mapped.x;
+                    snappyMouseY = mapped.y;
+                } else if (!_snappyThrottle.running) {
                     _snappyThrottle.start();
+                }
             }
 
             /* ── Utility functions ───────────────────────────────────── */
@@ -424,6 +519,9 @@ Scope {
             /* Begin the hide animation if conditions allow. */
             function startHideAnimation() {
                 if (!autohide || DaemonBridge.activeMenuId !== "" || mouseInDock)
+                    return;
+                /* Do not hide while the dock is still holding its contract delay */
+                if (_snappyContractTimer.running)
                     return;
                 dockRevealed = false;
             }
@@ -511,26 +609,78 @@ Scope {
                 color: "transparent"
 
                 /* ── Precise input surface: follows dockLayout geometry ─ */
+                /* When snappy magnification is idle this item collapses to
+                   match dockBackground, so the mask union equals dockBackground
+                   and no ghost space steals clicks from windows behind the
+                   dock.  When magnification is active it expands to cover
+                   the overflow area so lifted icons remain interactive.     */
                 Item {
                     id: iconHitArea
-                    /* Track the Grid's position + overflow margin for snappy mode */
-                    x: screenScope.isHorizontal
-                       ? (dockLayout.x - (screenScope.snappyMainOverflow / 2) - 8)
-                       : (screenScope.isRight ? (parent.width - width) : 0)
-                    y: screenScope.isVertical
-                       ? (dockLayout.y - (screenScope.snappyMainOverflow / 2) - 8)
-                       : (screenScope.isBottom ? (parent.height - height) : 0)
-                    width:  screenScope.isHorizontal
+                    x: {
+                        if (!screenScope._snappyMagnifyActive) return dockBackground.x;
+                        return screenScope.isHorizontal
+                            ? (dockLayout.x - (screenScope.snappyMainOverflow / 2) - 8)
+                            : (screenScope.isRight ? (parent.width - width) : 0);
+                    }
+                    y: {
+                        if (!screenScope._snappyMagnifyActive) return dockBackground.y;
+                        return screenScope.isVertical
+                            ? (dockLayout.y - (screenScope.snappyMainOverflow / 2) - 8)
+                            : (screenScope.isBottom ? (parent.height - height) : 0);
+                    }
+                    width: {
+                        if (!screenScope._snappyMagnifyActive) return dockBackground.width;
+                        return screenScope.isHorizontal
                             ? (dockLayout.implicitWidth + screenScope.snappyMainOverflow + 16)
-                            : parent.width
-                    height: screenScope.isVertical
+                            : parent.width;
+                    }
+                    height: {
+                        if (!screenScope._snappyMagnifyActive) return dockBackground.height;
+                        return screenScope.isVertical
                             ? (dockLayout.implicitHeight + screenScope.snappyMainOverflow + 16)
-                            : parent.height
+                            : parent.height;
+                    }
+                }
+
+                /* ── AutoHide edge hotspot ─────────────────────────────── */
+                /* When hidden or animating (_hideProgress > 0), cover the entire
+                   panel surface.  Because the window is pushed offscreen by negative
+                   margins, only the thin edge strip is physically on-screen, but
+                   covering the panel ensures that as the dock slides into view,
+                   the cursor remains continuously inside the input mask without
+                   dropping hover mid-animation.
+                   When fully revealed (_hideProgress === 0), collapse to only the
+                   thin edge strip at the screen edge under the dock bar — completely
+                   clearing the headroom zone above the dock so windows behind receive
+                   all clicks with zero ghosting. */
+                Item {
+                    id: edgeHotspot
+                    x: {
+                        if (screenScope._hideProgress > 0.0) return 0;
+                        var pw = parent ? parent.width : 0;
+                        return screenScope.isRight ? (pw - width) : 0;
+                    }
+                    y: {
+                        if (screenScope._hideProgress > 0.0) return 0;
+                        var ph = parent ? parent.height : 0;
+                        return screenScope.isBottom ? (ph - height) : 0;
+                    }
+                    width: {
+                        var pw = parent ? parent.width : 0;
+                        if (screenScope._hideProgress > 0.0) return pw;
+                        return screenScope.isVertical ? screenScope.edgeStripSize : pw;
+                    }
+                    height: {
+                        var ph = parent ? parent.height : 0;
+                        if (screenScope._hideProgress > 0.0) return ph;
+                        return screenScope.isHorizontal ? screenScope.edgeStripSize : ph;
+                    }
                 }
 
                 mask: Region {
                     Region { item: dockBackground }
                     Region { item: iconHitArea }
+                    Region { item: edgeHotspot }
                 }
 
                 /* ── Dock container (input region, full panel size) ──── */
@@ -678,35 +828,32 @@ Scope {
                         }
                     }
 
-                    /* ── Snappy mode: passive pointer tracker ──────────── */
+                    /* ── Unified dock hover and pointer tracking ────────── */
                     HoverHandler {
-                        id: snappyPointerTracker
-                        enabled: screenScope.snappyMode
+                        id: dockHoverHandler
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                         target: null
 
                         onPointChanged: {
-                            screenScope.updateSnappyPointerFromContainer(point.position.x, point.position.y);
-                        }
-
-                        onHoveredChanged: {
-                            if (hovered)
+                            if (screenScope.snappyMode && screenScope.dockRevealed) {
                                 screenScope.updateSnappyPointerFromContainer(point.position.x, point.position.y);
-                            else
-                                screenScope.clearSnappyPointer();
+                            }
                         }
-                    }
 
-                    /* ── Autohide hover detection ───────────────────────── */
-                    HoverHandler {
-                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                         onHoveredChanged: {
                             if (hovered) {
                                 screenScope.mouseInDock = true;
+                                screenScope.cancelSnappyContract();
                                 screenScope.showDock();
+                                if (screenScope.snappyMode) {
+                                    screenScope.updateSnappyPointerFromContainer(point.position.x, point.position.y);
+                                }
                             } else {
                                 screenScope.mouseInDock = false;
-                                screenScope.clearSnappyPointer();
+                                if (screenScope._pointerInDockIcons) {
+                                    screenScope._pointerInDockIcons = false;
+                                }
+                                screenScope.scheduleSnappyContract();
                                 screenScope.scheduleHide();
                             }
                         }

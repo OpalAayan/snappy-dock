@@ -133,6 +133,15 @@ IconSpacing=3
 # Has no effect in static mode.
 RiseSpacing=1
 
+# Hold time in milliseconds before the dock contracts after the cursor leaves.
+# 0 means contract immediately (default).
+# Higher values make the dock linger in its expanded state, giving a smoother feel.
+# NOTE: If AutoHide=true, ContractDelay should always be LESS than HotspotDelay
+#       so the dock contracts before hiding (e.g. ContractDelay=300, HotspotDelay=800).
+# Range: 0–2000 ms.
+# Has no effect in static mode.
+ContractDelay=0
+
 
 [Icons]
 

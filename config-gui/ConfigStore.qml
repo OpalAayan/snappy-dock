@@ -37,6 +37,7 @@ Singleton {
     property int spread: 3
     property int iconSpacing: 2
     property real riseSpacing: 0.5
+    property int contractDelay: 0
 
     /* [Icons] */
     property int iconSize: 48
@@ -70,6 +71,9 @@ Singleton {
     property string themeMenuTextColor: ""
     property string themeMenuAccent: ""
     property string themeMenuSeparator: ""
+
+    /* [IconOverrides] — per-app custom icon paths */
+    property var iconOverrides: ({})
 
     readonly property string pinnedPath: {
         var xdg = Quickshell.env("XDG_CONFIG_HOME");
@@ -170,6 +174,29 @@ Singleton {
         savePinned();
     }
 
+    function setIconOverride(appName, path) {
+        if (!appName || !path) return;
+        var overrides = Object.assign({}, iconOverrides);
+        overrides[appName] = path;
+        iconOverrides = overrides;
+        save();
+        IconResolver.invalidate(appName);
+    }
+
+    function clearIconOverride(appName) {
+        if (!appName) return;
+        var overrides = Object.assign({}, iconOverrides);
+        delete overrides[appName];
+        iconOverrides = overrides;
+        save();
+        IconResolver.invalidate(appName);
+    }
+
+    function getIconOverride(appName) {
+        if (!appName) return "";
+        return (iconOverrides && iconOverrides[appName]) ? iconOverrides[appName] : "";
+    }
+
     function _parseBool(val) {
         var s = (val || "").toLowerCase();
         return s === "true" || s === "yes" || s === "1";
@@ -236,6 +263,7 @@ Singleton {
                 else if (key === "spread")             store.spread = parseInt(val) || 3;
                 else if (key === "iconspacing")        store.iconSpacing = parseInt(val) || 2;
                 else if (key === "risespacing")        store.riseSpacing = parseFloat(val) || 0.5;
+                else if (key === "contractdelay" || key === "restoredelay") store.contractDelay = parseInt(val) || 0;
             }
             else if (currentSection === "icons") {
                 if (key === "iconsize")                store.iconSize = parseInt(val) || 48;
@@ -270,6 +298,14 @@ Singleton {
                 else if (key === "menuaccent" || key === "menuactivebar") store.themeMenuAccent = val;
                 else if (key === "menuseparator" || key === "menuseparatorcolor") store.themeMenuSeparator = val;
             }
+            else if (currentSection === "iconoverrides") {
+                // key = appClassName (already lowercased), val = absolute icon path
+                // Store with original-case key from the line
+                var origKey = line.substring(0, eqIdx).trim();
+                var overrides = store.iconOverrides;
+                overrides[origKey] = val;
+                store.iconOverrides = overrides;
+            }
         }
     }
 
@@ -302,6 +338,7 @@ Singleton {
         out.push("Spread=" + store.spread);
         out.push("IconSpacing=" + store.iconSpacing);
         out.push("RiseSpacing=" + store.riseSpacing.toFixed(2));
+        out.push("ContractDelay=" + store.contractDelay);
         out.push("");
         out.push("[Icons]");
         out.push("IconSize=" + store.iconSize);
@@ -336,6 +373,17 @@ Singleton {
         if (store.themeMenuAccent)      out.push("MenuAccent=" + store.themeMenuAccent);
         if (store.themeMenuSeparator)   out.push("MenuSeparator=" + store.themeMenuSeparator);
         out.push("");
+
+        // [IconOverrides]
+        var overrideKeys = Object.keys(store.iconOverrides);
+        if (overrideKeys.length > 0) {
+            out.push("[IconOverrides]");
+            for (var oi = 0; oi < overrideKeys.length; oi++) {
+                out.push(overrideKeys[oi] + "=" + store.iconOverrides[overrideKeys[oi]]);
+            }
+            out.push("");
+        }
+
         return out.join("\n");
     }
 
@@ -368,6 +416,7 @@ Singleton {
         spread = 3;
         iconSpacing = 2;
         riseSpacing = 0.5;
+        contractDelay = 0;
 
         iconSize = 48;
         iconTheme = "";
